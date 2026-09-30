@@ -46,11 +46,17 @@ def test_full_flow_queue_to_portal(client, db, sample):
 
 
 def test_csv_import_and_project_coverage(client, db, sample):
-    csv = "vendor,project,date,amount,reference\nAcme Stone LLC,J1,09/15/2026,1000.00,ACH 1\nNobody,J1,2026-09-15,5,ACH 2\n"
+    csv = ("vendor,project,date,reference,invoice_number,invoice_date,invoice_amount,net_amount\n"
+           "Acme Stone LLC,J1,09/15/2026,ACH 1,INV1,09/01/2026,\"$1,000.00\",900.00\n"
+           "Acme Stone LLC,J1,09/15/2026,ACH 1,INV2,09/03/2026,500.00,450.00\n"
+           "Nobody,J1,2026-09-15,ACH 2,INV3,09/03/2026,5,5\n")
     r = client.post("/import", data={"kind": "payments"}, files={"file": ("p.csv", csv, "text/csv")})
-    assert "Created 1, updated 0, 1 error(s)" in r.text and "line 3: vendor" in r.text and "Nobody" in r.text
+    assert "Created 1, updated 0, 1 error(s)" in r.text and "line 4: vendor" in r.text and "Nobody" in r.text
+    pay = db.query(Payment).one()
+    assert pay.amount_cents == 135000 and [b.invoice_number for b in pay.bills] == ["INV1", "INV2"]
+    assert pay.latest_invoice_date == date(2026, 9, 3)
     page = client.get(f"/projects/{sample['project'].id}").text
-    assert "$1,000.00" in page and "Acme Stone LLC" in page
+    assert "$1,350.00" in page and "Acme Stone LLC" in page
 
 
 def test_generate_leaves_draft_when_vendor_has_no_email(client, db, sample):

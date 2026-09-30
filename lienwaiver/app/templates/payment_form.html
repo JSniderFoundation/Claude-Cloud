@@ -7,8 +7,16 @@
     <label>Vendor <select name="vendor_id" required>{% for v in vendors %}<option value="{{ v.id }}">{{ v.name }}</option>{% endfor %}</select></label>
     <label>Project <select name="project_id" required>{% for p in projects %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select></label>
     <div class="row gap"><label>Payment date <input type="date" name="payment_date" value="{{ today }}" required></label>
-    <label>Amount <input name="amount" placeholder="12,345.67" required></label></div>
-    <div class="row gap"><label>Check / ACH ref <input name="reference"></label><label>Memo <input name="memo"></label></div>
+    <label>Check / ACH ref <input name="reference" placeholder="ACH or check number"></label></div>
+    <h3>Invoices covered (printed on the waiver)</h3>
+    <table class="grid inv">
+      <thead><tr><th>Invoice #</th><th>Invoice date</th><th>Invoice amount</th><th>Net paid</th></tr></thead>
+      <tbody>{% for n in range(1, 6) %}
+      <tr><td><input name="inv_number_{{ n }}"></td><td><input type="date" name="inv_date_{{ n }}"></td>
+          <td><input name="inv_gross_{{ n }}" placeholder="34,000.00"></td><td><input name="inv_net_{{ n }}" placeholder="30,600.00"></td></tr>
+      {% endfor %}</tbody>
+    </table>
+    <div class="row gap"><label>Payment amount <input name="amount" placeholder="blank = sum of net paid"></label><label>Memo <input name="memo"></label></div>
     <button class="primary">Add to queue</button>
   </form>
 </div>

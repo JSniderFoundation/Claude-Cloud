@@ -13,7 +13,8 @@
   <dl>
     <dt>Vendor</dt><dd><a href="/vendors/{{ w.vendor.id }}">{{ w.vendor.name }}</a> <span class="muted">{{ w.vendor.contact_email or 'no email on file' }}</span></dd>
     <dt>Project</dt><dd><a href="/projects/{{ w.project.id }}">{{ w.project.name }}</a>{% if w.project.bond_project %} <span class="tag">bond language included</span>{% endif %}</dd>
-    <dt>Payment</dt><dd>{{ w.amount | money }}{% if w.payment %} on {{ w.payment.payment_date | shortdate }} {{ w.payment.reference }}{% endif %}</dd>
+    <dt>Payment</dt><dd>{{ w.amount | money }}{% if w.payment %} on {{ w.payment.payment_date | shortdate }} {{ w.payment.reference }}{% endif %}
+      {% if w.payment and w.payment.bills %}<br><span class="muted">{% for b in w.payment.bills %}{{ b.invoice_number }} {{ b.gross | money }} / net {{ b.net | money }}{{ ', ' if not loop.last }}{% endfor %}</span>{% endif %}</dd>
     <dt>Sent</dt><dd>{{ w.sent_at | stamp or '—' }}</dd>
     <dt>Due back</dt><dd>{{ w.due_at | shortdate or '—' }}{% if w.reminder_count %} <span class="muted">({{ w.reminder_count }} reminder(s), last {{ w.last_reminder_at | shortdate }})</span>{% endif %}</dd>
     <dt>Received</dt><dd>{{ w.received_at | stamp or '—' }} {{ w.received_via }}</dd>
@@ -47,9 +48,7 @@
   <form method="post" action="/waivers/{{ w.id }}/update">
     <label>Type <select name="waiver_type"><option value="progress" {{ 'selected' if w.waiver_type == 'progress' }}>Progress</option><option value="final" {{ 'selected' if w.waiver_type == 'final' }}>Final</option></select></label>
     <label>Through date <input type="date" name="through_date" value="{{ w.through_date }}" required></label>
-    <label>Retention withheld (progress only) <input name="retention" value="{{ w.retention }}"></label>
-    <label>Disputed amount (progress only) <input name="disputed" value="{{ w.disputed }}"></label>
-    <label>Other exceptions <textarea name="exceptions_text" rows="2">{{ w.exceptions_text }}</textarea></label>
+    <label>Exceptions (optional, printed after the release text) <textarea name="exceptions_text" rows="2">{{ w.exceptions_text }}</textarea></label>
     <button>Save and regenerate PDF</button>
   </form>
   {% endif %}

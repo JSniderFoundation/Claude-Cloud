@@ -8,7 +8,7 @@ from datetime import date, timedelta
 from app.config import settings
 from app.db import SessionLocal, engine, init_db
 from app.auth import hash_password
-from app.models import Base, Payment, Project, User, Vendor
+from app.models import Base, Payment, PaymentBill, Project, User, Vendor
 from app.services import hold, waivers
 
 
@@ -33,9 +33,9 @@ def main() -> None:
         Vendor(name="Precision Stone Fabricators LLC", address1="410 Industrial Pkwy", city="Grove City", zip="43123",
                contact_name="Dana Ortiz", contact_email="dana@precisionstone.example"),
         Vendor(name="Ohio Cabinet Supply Co.", address1="2200 Commerce Dr", city="Hilliard", zip="43026",
-               contact_name="Marcus Lee", contact_email="ap@ohiocabinet.example"),
+               contact_name="Marcus Lee", contact_email="ap@ohiocabinet.example", furnishes="Materials"),
         Vendor(name="Summit Installers Inc.", address1="77 Summit St", city="Akron", zip="44308",
-               contact_name="Priya Nair", contact_email="priya@summitinstall.example", hold_mode="exchange"),
+               contact_name="Priya Nair", contact_email="priya@summitinstall.example", hold_mode="exchange", furnishes="Labor"),
         Vendor(name="Northcoast Hardware Distributors", address1="900 Lakeside Ave", city="Cleveland", zip="44114",
                contact_name="Tom Becker", contact_email="tbecker@northcoasthw.example"),
         Vendor(name="Metro Countertop Delivery", address1="15 Freight Ln", city="Columbus", zip="43204",
@@ -46,9 +46,17 @@ def main() -> None:
     rf, mc, hv = projects
     ps, oc, si, nh, md = vendors
 
-    def pay(vendor, project, days_ago, amount, ref):
+    inv_seq = [1000]
+
+    def pay(vendor, project, days_ago, amount, ref, retention=0.10, invoices=1):
         p = Payment(vendor_id=vendor.id, project_id=project.id, payment_date=today - timedelta(days=days_ago),
                     amount_cents=int(round(amount * 100)), reference=ref)
+        per = amount / invoices
+        for k in range(invoices):
+            inv_seq[0] += 1
+            gross = per / (1 - retention) if retention else per
+            p.bills.append(PaymentBill(invoice_number=f"INV{inv_seq[0]:05d}", invoice_date=p.payment_date - timedelta(days=12 + k),
+                                       gross_cents=int(round(gross * 100)), net_cents=int(round(per * 100))))
         db.add(p)
         db.flush()
         return p
@@ -80,9 +88,9 @@ def main() -> None:
     waivers.regenerate_pdf(db, w5, "seed")
 
     # Queue: payments with no waiver yet, including a final on the complete project
-    pay(oc, mc, 1, 31250.00, "ACH 100322")
+    pay(oc, mc, 1, 31250.00, "ACH 100322", invoices=3)
     pay(ps, hv, 1, 6400.00, "ACH 100323")
-    pay(md, rf, 0, 1850.00, "CHK 5530")
+    pay(md, rf, 0, 1850.00, "CHK 5530", retention=0)
     pay(nh, rf, 0, 4975.50, "ACH 100325")
 
     db.commit()

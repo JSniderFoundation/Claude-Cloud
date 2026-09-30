@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import current_user
 from ..db import get_db
-from ..models import Event, Payment, Project, User, Vendor, cents_to_decimal, decimal_to_cents
+from ..models import Event, Payment, PaymentBill, Project, User, Vendor, cents_to_decimal, decimal_to_cents
 from ..services import importer
 from ..web import flash, render
 
@@ -16,7 +16,7 @@ router = APIRouter(dependencies=[Depends(current_user)])
 PROJECT_FIELDS = ["name", "job_number", "netsuite_id", "address1", "city", "state", "zip", "county", "owner_name",
                   "gc_name", "surety_name", "bond_number", "notes"]
 VENDOR_FIELDS = ["name", "netsuite_id", "address1", "address2", "city", "state", "zip", "contact_name", "contact_email",
-                 "hold_mode", "notes"]
+                 "furnishes", "hold_mode", "notes"]
 
 
 def _apply(obj, form, fields: list[str], checkboxes: list[str]):
@@ -173,10 +173,24 @@ async def payment_create(request: Request, db: Session = Depends(get_db), user: 
             vendor_id=int(form.get("vendor_id")),
             project_id=int(form.get("project_id")),
             payment_date=datetime.strptime(str(form.get("payment_date")), "%Y-%m-%d").date(),
-            amount_cents=decimal_to_cents(str(form.get("amount")).replace("$", "").replace(",", "")),
+            amount_cents=decimal_to_cents(str(form.get("amount") or "0").replace("$", "").replace(",", "")),
             reference=str(form.get("reference", "")).strip(),
             memo=str(form.get("memo", "")).strip(),
         )
+        for n in range(1, 6):  # invoice rows on the form; blank rows are ignored
+            number = str(form.get(f"inv_number_{n}", "")).strip()
+            net = str(form.get(f"inv_net_{n}", "")).strip()
+            if not number and not net:
+                continue
+            inv_date = str(form.get(f"inv_date_{n}", "")).strip()
+            p.bills.append(PaymentBill(
+                invoice_number=number,
+                invoice_date=datetime.strptime(inv_date, "%Y-%m-%d").date() if inv_date else None,
+                gross_cents=decimal_to_cents(str(form.get(f"inv_gross_{n}") or "0").replace("$", "").replace(",", "")),
+                net_cents=decimal_to_cents(net.replace("$", "").replace(",", "") or "0"),
+            ))
+        if p.bills and not str(form.get("amount", "")).strip():
+            p.amount_cents = sum(b.net_cents for b in p.bills)
         if p.amount_cents <= 0:
             raise ValueError("amount must be positive")
         db.add(p)

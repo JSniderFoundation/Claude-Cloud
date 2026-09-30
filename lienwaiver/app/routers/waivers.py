@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import current_user
 from ..db import get_db
-from ..models import Project, User, Vendor, Waiver, decimal_to_cents
+from ..models import Project, User, Vendor, Waiver
 from ..services import waivers as svc
 from ..web import flash, render
 
@@ -90,8 +90,6 @@ async def update(request: Request, waiver_id: int, db: Session = Depends(get_db)
     try:
         w.waiver_type = "final" if form.get("waiver_type") == "final" else "progress"
         w.through_date = datetime.strptime(str(form.get("through_date")), "%Y-%m-%d").date()
-        w.retention_cents = decimal_to_cents(str(form.get("retention") or "0"))
-        w.disputed_cents = decimal_to_cents(str(form.get("disputed") or "0"))
         w.exceptions_text = str(form.get("exceptions_text", "")).strip()
         svc.log(db, w, user.username, "edited", "type, through date or exceptions changed")
         svc.regenerate_pdf(db, w, user.username)

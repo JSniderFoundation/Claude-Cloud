@@ -6,14 +6,16 @@ from sqlalchemy.orm import Session
 from ..models import Setting
 
 DEFAULTS: dict[str, str] = {
-    "company_name": "Your Company, LLC",
-    "company_address": "123 Main St, Columbus, OH 43215",
-    "company_phone": "",
+    "company_name": "Foundation Millwork and Stone LLC",
+    "company_address1": "315 Phillipi Rd, Suite C",
+    "company_address2": "Columbus, OH 43228",
+    "company_phone": "(614) 274-4700",
+    "company_email": "ap@millworkandstone.com",
     "default_return_days": "7",
     "reminder_days_before_due": "3",
     "reminder_every_days_after_due": "5",
-    "signature_name": "",
-    "signature_title": "Accounts Payable",
+    "signer_title_line": "Owner/Partner/President/Co. Officer",
+    "important_line": "Important: Future payments will not be released until this form is signed and returned!",
     "email_intro": "Attached is a lien waiver for your recent payment. Please sign it and return it using the link below.",
 }
 

@@ -63,7 +63,7 @@ Header row required, extra columns ignored, existing rows matched by `netsuite_i
 |---|---|
 | vendors | `name, netsuite_id, address1, address2, city, state, zip, contact_name, contact_email` |
 | projects | `name, job_number, netsuite_id, address1, city, state, zip, county, owner_name, gc_name, bond_project, surety_name, bond_number` |
-| payments | `vendor, project, date, amount, reference, memo, netsuite_id` (vendor/project: NetSuite id, job number or exact name) |
+| payments | `vendor, project, date, reference, invoice_number, invoice_date, invoice_amount, net_amount, memo, netsuite_id` (one row per invoice paid; rows with the same vendor, project, date and reference become one payment; `amount` may replace the invoice columns for a single lump sum) |
 
 ## Email through Microsoft 365
 
@@ -91,5 +91,6 @@ app/services/netsuite.py  adapter (fake now, REST in phase 2)
 app/templates/pdf/waiver.html   the waiver document text
 ```
 
-The waiver wording is a draft for Ohio, which has no statutory form. Have counsel review it once, and swap in the
-company template text in `app/templates/pdf/waiver.html` when it arrives.
+The waiver wording follows the company's existing Partial Waiver of Lien form, with a Final variant and bond release
+language that appears only on bond projects. Company name, address, phone, email, signer title line and the notice
+line are editable under Settings; the text itself lives in `app/templates/pdf/waiver.html`.

@@ -8,12 +8,13 @@ from datetime import date, datetime
 
 from sqlalchemy.orm import Session
 
-from ..models import Payment, Project, Vendor, decimal_to_cents
+from ..models import Payment, PaymentBill, Project, Vendor, decimal_to_cents
 
 VENDOR_COLUMNS = ["name", "netsuite_id", "address1", "address2", "city", "state", "zip", "contact_name", "contact_email"]
 PROJECT_COLUMNS = ["name", "job_number", "netsuite_id", "address1", "city", "state", "zip", "county", "owner_name",
                    "gc_name", "bond_project", "surety_name", "bond_number"]
-PAYMENT_COLUMNS = ["vendor", "project", "date", "amount", "reference", "memo", "netsuite_id"]
+PAYMENT_COLUMNS = ["vendor", "project", "date", "amount", "reference", "memo", "netsuite_id",
+                   "invoice_number", "invoice_date", "invoice_amount", "net_amount"]
 
 
 @dataclass
@@ -102,8 +103,15 @@ def find_project(db: Session, key: str) -> Project | None:
             or db.query(Project).filter(Project.name == key).one_or_none())
 
 
+def _cents(text: str) -> int:
+    return decimal_to_cents(text.replace("$", "").replace(",", "") or "0")
+
+
 def import_payments(db: Session, text: str) -> ImportResult:
+    """One CSV row per invoice paid. Rows with the same vendor, project, date and reference form one payment.
+    If invoice columns are present the payment amount is the sum of net_amount; otherwise the amount column is used."""
     res = ImportResult()
+    groups: dict[tuple, dict] = {}
     for i, row in enumerate(_rows(text), start=2):
         try:
             vendor = find_vendor(db, row.get("vendor", ""))
@@ -113,23 +121,42 @@ def import_payments(db: Session, text: str) -> ImportResult:
             if project is None:
                 raise ValueError(f"project {row.get('project')!r} not found")
             when = _parse_date(row.get("date", ""))
-            cents = decimal_to_cents(row.get("amount", "").replace("$", "").replace(",", ""))
-        except (ValueError, ArithmeticError) as e:
+            has_invoice = bool(row.get("invoice_number") or row.get("net_amount"))
+            bill = None
+            if has_invoice:
+                bill = PaymentBill(invoice_number=row.get("invoice_number", ""),
+                                   invoice_date=_parse_date(row["invoice_date"]) if row.get("invoice_date") else None,
+                                   gross_cents=_cents(row.get("invoice_amount", "")),
+                                   net_cents=_cents(row.get("net_amount") or row.get("amount", "")))
+            amount = _cents(row.get("amount", "")) if not has_invoice else bill.net_cents
+        except (ValueError, ArithmeticError, KeyError) as e:
             res.errors.append(f"line {i}: {e}")
             continue
-        ns_id = row.get("netsuite_id") or None
+        key = (vendor.id, project.id, when, row.get("reference", ""), row.get("netsuite_id") or None)
+        g = groups.setdefault(key, {"vendor": vendor, "project": project, "date": when, "reference": row.get("reference", ""),
+                                    "netsuite_id": row.get("netsuite_id") or None, "memo": row.get("memo", ""),
+                                    "amount": 0, "bills": []})
+        g["amount"] += amount
+        if bill is not None:
+            g["bills"].append(bill)
+
+    for g in groups.values():
         existing = None
-        if ns_id:
-            existing = db.query(Payment).filter(Payment.netsuite_id == ns_id, Payment.project_id == project.id).one_or_none()
-        if existing is None and row.get("reference"):
-            existing = db.query(Payment).filter(Payment.vendor_id == vendor.id, Payment.project_id == project.id,
-                                                Payment.reference == row["reference"]).one_or_none()
+        if g["netsuite_id"]:
+            existing = db.query(Payment).filter(Payment.netsuite_id == g["netsuite_id"],
+                                                Payment.project_id == g["project"].id).one_or_none()
+        if existing is None and g["reference"]:
+            existing = db.query(Payment).filter(Payment.vendor_id == g["vendor"].id, Payment.project_id == g["project"].id,
+                                                Payment.reference == g["reference"]).one_or_none()
         if existing:
-            existing.payment_date, existing.amount_cents, existing.memo = when, cents, row.get("memo", "")
+            existing.payment_date, existing.amount_cents, existing.memo = g["date"], g["amount"], g["memo"]
+            if g["bills"]:
+                existing.bills = g["bills"]
             res.updated += 1
         else:
-            db.add(Payment(netsuite_id=ns_id, vendor_id=vendor.id, project_id=project.id, payment_date=when,
-                           amount_cents=cents, reference=row.get("reference", ""), memo=row.get("memo", "")))
+            db.add(Payment(netsuite_id=g["netsuite_id"], vendor_id=g["vendor"].id, project_id=g["project"].id,
+                           payment_date=g["date"], amount_cents=g["amount"], reference=g["reference"], memo=g["memo"],
+                           bills=g["bills"]))
             res.created += 1
     db.commit()
     return res

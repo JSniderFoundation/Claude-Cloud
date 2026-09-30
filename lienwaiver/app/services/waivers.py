@@ -55,7 +55,7 @@ def create_from_payment(db: Session, payment: Payment, waiver_type: str, user: s
         payment=payment,
         waiver_type=waiver_type,
         amount_cents=payment.amount_cents,
-        through_date=through_date or payment.payment_date,
+        through_date=through_date or payment.latest_invoice_date or payment.payment_date,
         status="draft",
     )
     db.add(waiver)
@@ -90,7 +90,7 @@ def _vendor_mail(db: Session, waiver: Waiver, subject: str, intro: str, attach: 
         f"Return by:   {waiver.due_at:%m/%d/%Y}\n\n"
         f"Sign and return here (no login needed):\n{portal_url(waiver)}\n\n"
         f"You can also reply to this email with the signed copy attached.\n\n"
-        f"Thank you,\n{cfg['company_name']} Accounts Payable\n"
+        f"Thank you,\n{cfg['company_name']} Accounts Payable\n{cfg['company_phone']}  {cfg['company_email']}\n"
     )
     attachments = []
     if attach and waiver.pdf_unsigned_path:

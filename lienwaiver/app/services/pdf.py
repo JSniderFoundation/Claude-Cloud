@@ -26,6 +26,7 @@ def longdate(value) -> str:
 
 _env.filters["money"] = money
 _env.filters["longdate"] = longdate
+_env.filters["shortdate"] = lambda d: d.strftime("%m/%d/%Y") if d else ""
 
 
 def slug(text: str) -> str:

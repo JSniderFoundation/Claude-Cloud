@@ -8,6 +8,8 @@
     <label>Address <input name="address1" value="{{ v.address1 }}"></label>
     <label>Address line 2 <input name="address2" value="{{ v.address2 }}"></label>
     <div class="row gap"><label>City <input name="city" value="{{ v.city }}"></label><label>State <input name="state" value="{{ v.state }}" size="2"></label><label>ZIP <input name="zip" value="{{ v.zip }}"></label></div>
+    <label>Furnishes (printed on the waiver) <select name="furnishes">
+      {% for opt in ['Labor and/or Materials', 'Labor', 'Materials'] %}<option {{ 'selected' if v.furnishes == opt }}>{{ opt }}</option>{% endfor %}</select></label>
     <h3>Who signs waivers</h3>
     <div class="row gap"><label>Contact name <input name="contact_name" value="{{ v.contact_name }}"></label>
     <label>Contact email <input name="contact_email" type="email" value="{{ v.contact_email }}"></label></div>

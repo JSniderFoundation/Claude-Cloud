@@ -46,10 +46,12 @@ def test_progress_pdf_without_bond_has_no_bond_language(db, sample):
     p = _payment(db, sample)
     w = waivers.create_from_payment(db, p, "progress", "t")
     db.commit()
-    text = _text(render_waiver_pdf(w, {"company_name": "Us LLC", "company_address": "", "company_phone": ""}, "http://x/p/t"))
-    assert "PROGRESS PAYMENT" in text.upper()
+    from app.services.company import DEFAULTS
+    text = _text(render_waiver_pdf(w, dict(DEFAULTS), "http://x/p/t"))
+    assert "Partial Waiver of Lien" in text
     assert "$12,345.67" in text
     assert "Acme Stone LLC" in text and "Riverside Flats" in text and "Owner LLC" in text
+    assert "Foundation Millwork and Stone LLC" in text and "ap@millworkandstone.com" in text
     assert "bond" not in text.lower()
 
 
@@ -57,9 +59,10 @@ def test_final_pdf_on_bond_project_releases_bond_claims(db, sample):
     p = _payment(db, sample, project=sample["bond"])
     w = waivers.create_from_payment(db, p, "final", "t")
     db.commit()
-    html = render_waiver_html(w, {"company_name": "Us LLC", "company_address": "", "company_phone": ""}, "http://x/p/t")
-    assert "Final Payment" in html and "payment bond" in html and "Surety Co" in html and "B-1" in html
-    assert "Retention withheld" not in html
+    from app.services.company import DEFAULTS
+    html = render_waiver_html(w, dict(DEFAULTS), "http://x/p/t")
+    assert "Final Waiver of Lien" in html and "payment bond" in html and "Surety Co" in html and "B-1" in html
+    assert "final payment" in html and "through" not in html.split("Dated this")[0].split("certifies")[1]
 
 
 def test_send_sets_due_date_and_emails_pdf(db, sample):

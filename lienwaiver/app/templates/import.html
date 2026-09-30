@@ -15,6 +15,7 @@
   <h3>Columns</h3>
   <p class="muted">Header row required. Extra columns are ignored. Existing rows are matched by NetSuite id, then job number or reference, then name.</p>
   {% for k, cols in columns.items() %}<p><b>{{ k }}</b>: <code>{{ cols | join(', ') }}</code></p>{% endfor %}
-  <p class="muted">Payments: <code>vendor</code> and <code>project</code> may be a NetSuite id, job number or exact name. Dates as 2026-09-30 or 09/30/2026.</p>
+  <p class="muted">Payments: <code>vendor</code> and <code>project</code> may be a NetSuite id, job number or exact name. Dates as 2026-09-30 or 09/30/2026.
+  One row per invoice paid: rows with the same vendor, project, date and reference become one payment, and <code>net_amount</code> is what was paid on that invoice after retention.</p>
 </div>
 {% endblock %}

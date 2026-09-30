@@ -52,6 +52,7 @@ class Vendor(Base):
     contact_email: Mapped[str] = mapped_column(String(254), default="")
     # previous: waiver for the previous payment gates the next one (N-day window)
     # exchange: every payment needs a received waiver before the vendor is payable
+    furnishes: Mapped[str] = mapped_column(String(32), default="Labor and/or Materials")  # printed on the waiver
     hold_mode: Mapped[str] = mapped_column(String(16), default="previous")
     return_days: Mapped[int | None] = mapped_column(Integer, nullable=True)  # overrides the default
     on_hold: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -115,10 +116,17 @@ class Payment(Base):
     vendor: Mapped[Vendor] = relationship(back_populates="payments")
     project: Mapped[Project] = relationship(back_populates="payments")
     waivers: Mapped[list[Waiver]] = relationship(back_populates="payment")
+    bills: Mapped[list[PaymentBill]] = relationship(back_populates="payment", cascade="all, delete-orphan",
+                                                    order_by="PaymentBill.invoice_date")
 
     @property
     def amount(self) -> Decimal:
         return cents_to_decimal(self.amount_cents)
+
+    @property
+    def latest_invoice_date(self) -> date | None:
+        dates = [b.invoice_date for b in self.bills if b.invoice_date]
+        return max(dates) if dates else None
 
     @property
     def live_waiver(self) -> Waiver | None:
@@ -126,6 +134,29 @@ class Payment(Base):
             if w.status != "void":
                 return w
         return None
+
+
+class PaymentBill(Base):
+    """A vendor bill (invoice) covered by a payment. Printed in the invoice table on the waiver."""
+
+    __tablename__ = "payment_bills"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    payment_id: Mapped[int] = mapped_column(ForeignKey("payments.id"))
+    netsuite_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    invoice_number: Mapped[str] = mapped_column(String(64), default="")
+    invoice_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    gross_cents: Mapped[int] = mapped_column(Integer, default=0)  # invoice amount
+    net_cents: Mapped[int] = mapped_column(Integer, default=0)  # amount paid on it (after retention)
+
+    payment: Mapped[Payment] = relationship(back_populates="bills")
+
+    @property
+    def gross(self) -> Decimal:
+        return cents_to_decimal(self.gross_cents)
+
+    @property
+    def net(self) -> Decimal:
+        return cents_to_decimal(self.net_cents)
 
 
 class Waiver(Base):
