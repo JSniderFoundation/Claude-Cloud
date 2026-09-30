@@ -7,8 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /srv
-COPY pyproject.toml ./
-RUN pip install --no-cache-dir . 2>/dev/null || true
+COPY pyproject.toml README.md ./
 COPY app ./app
 COPY scripts ./scripts
 RUN pip install --no-cache-dir .

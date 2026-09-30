@@ -7,8 +7,9 @@ from datetime import date
 
 from sqlalchemy.orm import Session
 
+from ..config import settings
 from ..models import Setting
-from . import hold, waivers
+from . import hold, sync, waivers
 
 log = logging.getLogger("lienwaiver.jobs")
 
@@ -45,14 +46,26 @@ def run_daily_once(db: Session) -> bool:
     return True
 
 
-async def scheduler(session_factory, interval_seconds: int = 3600) -> None:
+def tick(session_factory) -> None:
+    """One scheduler pass: NetSuite sync (if configured), then the daily jobs once per day."""
+    db = session_factory()
+    try:
+        if settings.netsuite_backend == "rest":
+            try:
+                sync.run_sync(db)
+            except Exception:
+                db.rollback()
+                log.exception("NetSuite sync failed")
+        run_daily_once(db)
+    finally:
+        db.close()
+
+
+async def scheduler(session_factory, interval_seconds: int | None = None) -> None:
+    interval = interval_seconds or max(60, settings.netsuite_sync_minutes * 60)
     while True:
         try:
-            db = session_factory()
-            try:
-                await asyncio.to_thread(run_daily_once, db)
-            finally:
-                db.close()
+            await asyncio.to_thread(tick, session_factory)
         except Exception:
             log.exception("scheduler tick failed")
-        await asyncio.sleep(interval_seconds)
+        await asyncio.sleep(interval)

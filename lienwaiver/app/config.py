@@ -39,6 +39,18 @@ class Settings:
     graph_client_secret: str = field(default_factory=lambda: os.environ.get("GRAPH_CLIENT_SECRET", ""))
 
     netsuite_backend: str = field(default_factory=lambda: os.environ.get("NETSUITE_BACKEND", "fake"))
+    netsuite_account: str = field(default_factory=lambda: os.environ.get("NETSUITE_ACCOUNT", ""))
+    netsuite_consumer_key: str = field(default_factory=lambda: os.environ.get("NETSUITE_CONSUMER_KEY", ""))
+    netsuite_consumer_secret: str = field(default_factory=lambda: os.environ.get("NETSUITE_CONSUMER_SECRET", ""))
+    netsuite_token_id: str = field(default_factory=lambda: os.environ.get("NETSUITE_TOKEN_ID", ""))
+    netsuite_token_secret: str = field(default_factory=lambda: os.environ.get("NETSUITE_TOKEN_SECRET", ""))
+    netsuite_project_segment: str = field(default_factory=lambda: os.environ.get("NETSUITE_PROJECT_SEGMENT", "csegnsps_seg_projec"))
+    netsuite_subsidiary_id: str = field(default_factory=lambda: os.environ.get("NETSUITE_SUBSIDIARY_ID", ""))
+    netsuite_sync_start: str = field(default_factory=lambda: os.environ.get("NETSUITE_SYNC_START", "2026-09-01"))
+    netsuite_retainage_match: str = field(default_factory=lambda: os.environ.get("NETSUITE_RETAINAGE_MATCH", "Retainage"))
+    netsuite_write_holds: bool = field(default_factory=lambda: os.environ.get("NETSUITE_WRITE_HOLDS", "false").lower() in ("1", "true", "yes"))
+    netsuite_hold_field: str = field(default_factory=lambda: os.environ.get("NETSUITE_HOLD_FIELD", "custbody_lien_waiver_hold"))
+    netsuite_sync_minutes: int = field(default_factory=lambda: int(os.environ.get("NETSUITE_SYNC_MINUTES", "15")))
     timezone: str = field(default_factory=lambda: os.environ.get("TIMEZONE", "America/New_York"))
 
     @property

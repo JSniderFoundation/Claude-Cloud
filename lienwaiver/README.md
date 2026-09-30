@@ -17,7 +17,7 @@ uvicorn app.main:app --reload
 
 Open http://localhost:8000. Tests: `pytest`.
 
-## Run it with Docker (recommended for the office machine)
+## Run it with Docker
 
 ```bash
 cp .env.example .env    # edit it
@@ -26,10 +26,19 @@ docker compose up -d --build
 
 Data (SQLite database and PDFs) lives in `./data`. Back that folder up.
 
-**Public URL for vendors.** Vendor upload links use `BASE_URL`. On an office machine the simplest way to get a
-public HTTPS address without opening firewall ports is a Cloudflare Tunnel (free): install `cloudflared`, run
-`cloudflared tunnel --url http://localhost:8000` for a quick test, or create a named tunnel on a hostname such
-as `waivers.yourcompany.com` and set `BASE_URL` to it. Alternatively any small container host works with the same image.
+## Hosting on Render (no office machine needed)
+
+`render.yaml` describes the service: one Docker container, a 5 GB persistent disk at `/data` for the database and
+PDFs, health checks, HTTPS. Steps:
+
+1. In Render: **New > Blueprint**, connect the GitHub repo, pick the branch. Render reads `render.yaml`.
+2. Fill in the values marked `sync: false`: `ADMIN_PASSWORD`, `BASE_URL` (the service URL Render assigns, or your
+   custom domain such as `waivers.millworkandstone.com`), the Graph email values, and later the NetSuite values.
+3. Deploy. Open the URL, sign in, go to Settings and check the company details.
+4. Optional: add the custom domain under the service's Settings; Render issues the certificate.
+
+Cost is the Starter plan plus the disk, roughly $8 to $10 a month. Backups: Settings > **Download backup** gives a
+zip of the database and every PDF; take one weekly until the SharePoint mirror (phase 4) exists.
 
 ## Weekly use
 
@@ -52,8 +61,36 @@ Each vendor has a mode (Vendors > Edit):
 - **Previous payment gates the next** (default): on hold when any *sent* waiver is past its due date.
 - **Waiver in exchange for payment**: on hold while any waiver is outstanding at all.
 
-With `NETSUITE_BACKEND=fake` (phase 1) the hold is shown in the app and emailed to `AP_NOTIFY_EMAIL`; AP sets
-the Payment Hold in NetSuite by hand. Phase 3 pushes it automatically.
+With `NETSUITE_BACKEND=fake` the hold is shown in the app and emailed to `AP_NOTIFY_EMAIL`; AP sets the
+Payment Hold in NetSuite by hand. With `rest` and `NETSUITE_WRITE_HOLDS=true` the tool sets **Payment Hold** on
+the vendor's open bills itself, and stamps its own checkbox (`NETSUITE_HOLD_FIELD`) so it only ever clears holds
+it set. New bills entered while a vendor is on hold are caught at the next sync.
+
+## NetSuite sync
+
+Every `NETSUITE_SYNC_MINUTES` (and from Settings > **Sync now**) the app pulls vendor payments dated on or after
+`NETSUITE_SYNC_START`, the bills they were applied to, and the vendors and projects those bills reference. Only
+vendors and projects that appear on paid bills are imported, so utilities and office suppliers never show up.
+
+- The **Projects** custom segment (`csegnsps_seg_projec`) is read from the bill header. A bill with no project is
+  skipped and counted in the sync result. A payment covering bills on two projects becomes two payments in the app.
+- **Invoice amount** = bill total + retainage lines (lines to any account whose name contains
+  `NETSUITE_RETAINAGE_MATCH`). **Net amount** = what the payment applied to that bill.
+- NetSuite owns vendor names and addresses. The app owns the waiver contact, hold mode and everything about projects
+  except the name.
+
+Setting it up in NetSuite (one-time, admin):
+
+1. Enable **Token-Based Authentication** and **REST Web Services** (Setup > Company > Enable Features > SuiteCloud).
+2. Create a role *Lien Waiver Integration* with: Vendors (view), Vendor Bills (view, plus edit for phase 3),
+   Vendor Payments (view), Custom Segment Projects (view), REST Web Services, Log in using Access Tokens,
+   SuiteAnalytics Workbook (needed for SuiteQL). Restrict to the Foundation Millwork and Stone subsidiary.
+3. Setup > Integration > Manage Integrations > New: name *Lien Waivers*, tick Token-Based Authentication. Copy the
+   consumer key and secret (shown once).
+4. Setup > Users/Roles > Access Tokens > New: the integration, a user with the role above. Copy the token id and secret.
+5. Put the four values plus the account id in the environment. Set `NETSUITE_BACKEND=rest`, deploy, click Sync now.
+6. For phase 3, add a checkbox transaction body field on Vendor Bill with id `custbody_lien_waiver_hold` and set
+   `NETSUITE_WRITE_HOLDS=true`.
 
 ## CSV formats
 

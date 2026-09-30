@@ -32,7 +32,13 @@
     <dt>NetSuite</dt><dd>{{ env.netsuite_backend }}{% if env.netsuite_backend == 'fake' %} (holds are recorded here, not pushed){% endif %}</dd>
     <dt>PDF folder</dt><dd class="mono">{{ env.pdf_dir }}</dd>
   </dl>
-  <form method="post" action="/holds/run"><button>Run reminders and hold check now</button> <span class="muted">Runs automatically once a day.</span></form>
+  <div class="row gap">
+    <form method="post" action="/holds/run"><button>Run reminders and hold check now</button></form>
+    <form method="post" action="/sync/run"><button>Sync from NetSuite now</button></form>
+    <a class="btn" href="/backup.zip">Download backup</a>
+  </div>
+  <p class="muted">Reminders and holds run once a day. NetSuite sync runs every {{ env.netsuite_sync_minutes }} minutes when the backend is <code>rest</code>.
+  Last sync: {{ sync_status.at }}{% if sync_status.result %} ({{ sync_status.result }}){% endif %}.</p>
   {% if ns_calls %}
   <h3>Recent hold calls to NetSuite</h3>
   <ul class="timeline">{% for c in ns_calls %}<li><b>{{ 'SET' if c.on_hold else 'CLEAR' }}</b> {{ c.vendor }} <span class="muted">{{ c.reason }}</span></li>{% endfor %}</ul>

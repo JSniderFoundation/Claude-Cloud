@@ -1,6 +1,6 @@
 # Lien Waiver Tool — Design
 
-**Status:** Decisions made, phase 1 built (`lienwaiver/`) · **Owner:** Finance Systems · **Date:** 2026-09-30
+**Status:** Phases 1 to 3 built (`lienwaiver/`), NetSuite connection pending credentials · **Owner:** Finance Systems · **Date:** 2026-09-30
 
 ## 1. What we are building
 
@@ -40,9 +40,9 @@ A small tool that, for every payment we make to one of our subs or suppliers, pr
 |---|---|
 | D1 | Standalone app with NetSuite sync (option A). |
 | D2 | Waiver for the previous payment gates the next one, 7-day return window. The exchange pattern stays available per vendor. |
-| D3 | Projects are a custom field in NetSuite. The app holds the property address, owner, GC and bond details. |
+| D3 | Projects are the custom segment `csegnsps_seg_projec` on the bill header. The app holds the property address, owner, GC and bond details. Retainage is a negative line to the AP Retainage account, so bill total is net. |
 | D4 | Microsoft 365 for email and file mirroring. |
-| D5 | Hosting: whichever is easier; an old office machine is available. Recommendation: Docker on that machine with a Cloudflare Tunnel for the public vendor-upload URL (see `lienwaiver/README.md`). |
+| D5 | Hosting: no office machine is available, so the app runs on Render (Docker service with a persistent disk, `lienwaiver/render.yaml`). |
 | D6 | Bond claim language only on projects flagged as bond projects. |
 
 The original options, for the record:

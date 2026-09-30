@@ -1,0 +1,61 @@
+# Render blueprint: one Docker web service with a persistent disk for the SQLite database and PDFs.
+# In the Render dashboard: New > Blueprint > pick this repo. Root directory: lienwaiver.
+services:
+  - type: web
+    name: lienwaiver
+    runtime: docker
+    rootDir: lienwaiver
+    plan: starter
+    region: ohio
+    healthCheckPath: /health
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 5
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: DATABASE_URL
+        value: sqlite:////data/lienwaiver.db
+      - key: SECRET_KEY
+        generateValue: true
+      - key: BASE_URL
+        sync: false   # set to the service URL (https://lienwaiver.onrender.com) or your custom domain
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: AP_NOTIFY_EMAIL
+        value: ap@millworkandstone.com
+      - key: TIMEZONE
+        value: America/New_York
+      - key: EMAIL_BACKEND
+        value: graph
+      - key: EMAIL_FROM
+        value: lienwaivers@millworkandstone.com
+      - key: EMAIL_FROM_NAME
+        value: Foundation Millwork and Stone AP
+      - key: GRAPH_TENANT_ID
+        sync: false
+      - key: GRAPH_CLIENT_ID
+        sync: false
+      - key: GRAPH_CLIENT_SECRET
+        sync: false
+      - key: NETSUITE_BACKEND
+        value: fake   # switch to rest once the integration record exists
+      - key: NETSUITE_ACCOUNT
+        sync: false
+      - key: NETSUITE_CONSUMER_KEY
+        sync: false
+      - key: NETSUITE_CONSUMER_SECRET
+        sync: false
+      - key: NETSUITE_TOKEN_ID
+        sync: false
+      - key: NETSUITE_TOKEN_SECRET
+        sync: false
+      - key: NETSUITE_PROJECT_SEGMENT
+        value: csegnsps_seg_projec
+      - key: NETSUITE_SYNC_START
+        value: "2026-09-01"
+      - key: NETSUITE_WRITE_HOLDS
+        value: "false"
