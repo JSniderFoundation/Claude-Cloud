@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block title %}Vendors{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="row between"><h1>Vendors</h1><a class="btn primary" href="/vendors/new">New vendor</a></div>
+  <table class="grid">
+    <thead><tr><th>Vendor</th><th>Contact</th><th>Mode</th><th>Hold</th></tr></thead>
+    <tbody>{% for v in vendors %}
+    <tr class="{{ 'dim' if not v.active }}">
+      <td><a href="/vendors/{{ v.id }}">{{ v.name }}</a></td>
+      <td>{{ v.contact_name }} <span class="muted">{{ v.contact_email or 'no email' }}</span></td>
+      <td>{{ 'Waiver in exchange for payment' if v.hold_mode == 'exchange' else 'Previous payment gates next' }}{% if v.return_days %} ({{ v.return_days }}d){% endif %}</td>
+      <td>{% if v.on_hold %}<span class="tag bad">on hold</span> <span class="muted">{{ v.hold_reason }}</span>{% endif %}</td>
+    </tr>{% else %}<tr><td colspan="4" class="muted">No vendors yet.</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
+{% endblock %}

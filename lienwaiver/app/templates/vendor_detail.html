@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% block title %}{{ v.name }}{% endblock %}
+{% block content %}
+<div class="row between"><h1>{{ v.name }}{% if v.on_hold %} <span class="tag bad">on hold</span>{% endif %}</h1>
+  <div class="row gap"><a class="btn" href="/waivers?vendor={{ v.id }}">All waivers</a><a class="btn" href="/vendors/{{ v.id }}/edit">Edit</a></div></div>
+{% if v.on_hold %}<div class="flash warn"><b>Payment hold:</b> {{ v.hold_reason }}. The hold clears automatically when the waivers come back.</div>{% endif %}
+<div class="cols">
+<div class="card">
+  <dl>
+    <dt>Address</dt><dd>{{ v.address_lines | join(', ') or '—' }}</dd>
+    <dt>Contact</dt><dd>{{ v.contact_name }} {{ v.contact_email or '(no email)' }}</dd>
+    <dt>Hold mode</dt><dd>{{ 'Waiver in exchange for payment' if v.hold_mode == 'exchange' else 'Previous payment gates the next' }}, {{ v.return_days or 'default' }} day window</dd>
+    <dt>NetSuite</dt><dd>{{ v.netsuite_id or '—' }}</dd>
+  </dl>
+  <h3>Hold history</h3>
+  <ul class="timeline">{% for e in events %}<li><span class="muted">{{ e.at | stamp }}</span> <b>{{ e.action }}</b> {{ e.detail }}</li>{% else %}<li class="muted">No hold changes.</li>{% endfor %}</ul>
+</div>
+<div class="card">
+  <h2>Waivers</h2>
+  <table class="grid"><thead><tr><th>Waiver</th><th>Status</th><th>Project</th><th class="num">Amount</th><th>Due</th></tr></thead>
+  <tbody>{% for w in waivers %}<tr class="{{ 'overdue' if w.is_overdue() }}"><td><a href="/waivers/{{ w.id }}">{{ w.number }}</a></td><td><span class="tag st-{{ w.display_status }}">{{ w.display_status }}</span></td><td>{{ w.project.name }}</td><td class="num">{{ w.amount | money }}</td><td>{{ w.due_at | shortdate }}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">None yet.</td></tr>{% endfor %}</tbody></table>
+</div>
+</div>
+{% endblock %}

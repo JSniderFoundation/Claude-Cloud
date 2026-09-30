@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% block title %}Tracking{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="row between">
+    <h1>Tracking</h1>
+    <form method="get" class="row gap">
+      <select name="status" onchange="this.form.submit()">
+        {% for k, label in [('', 'All'), ('open', 'Open'), ('draft', 'Draft'), ('sent', 'Sent'), ('overdue', 'Overdue'), ('received', 'Received'), ('void', 'Void')] %}
+        <option value="{{ k }}" {{ 'selected' if status == k }}>{{ label }}</option>{% endfor %}
+      </select>
+      <select name="project" onchange="this.form.submit()"><option value="0">All projects</option>
+        {% for p in projects %}<option value="{{ p.id }}" {{ 'selected' if project == p.id }}>{{ p.name }}</option>{% endfor %}</select>
+      <select name="vendor" onchange="this.form.submit()"><option value="0">All vendors</option>
+        {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if vendor == v.id }}>{{ v.name }}</option>{% endfor %}</select>
+    </form>
+  </div>
+  <table class="grid">
+    <thead><tr><th>Waiver</th><th>Status</th><th>Vendor</th><th>Project</th><th>Type</th><th class="num">Amount</th><th>Through</th><th>Sent</th><th>Due</th><th>Received</th></tr></thead>
+    <tbody>
+    {% for w in waivers %}
+    <tr class="{{ 'overdue' if w.is_overdue() }}">
+      <td><a href="/waivers/{{ w.id }}">{{ w.number }}</a></td>
+      <td><span class="tag st-{{ w.display_status }}">{{ w.display_status }}</span></td>
+      <td>{{ w.vendor.name }}</td>
+      <td>{{ w.project.name }}</td>
+      <td>{{ w.waiver_type | capitalize }}</td>
+      <td class="num">{{ w.amount | money }}</td>
+      <td>{{ w.through_date | shortdate }}</td>
+      <td>{{ w.sent_at | shortdate }}</td>
+      <td>{{ w.due_at | shortdate }}</td>
+      <td>{{ w.received_at | shortdate }}</td>
+    </tr>
+    {% else %}<tr><td colspan="10" class="muted">No waivers match.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Lien Waivers{% endblock %}</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+{% if user %}
+<header class="top">
+  <a class="brand" href="/">Lien Waivers</a>
+  <nav>
+    <a href="/" class="{{ 'on' if active == 'queue' }}">Needs waiver</a>
+    <a href="/waivers" class="{{ 'on' if active == 'waivers' }}">Tracking</a>
+    <a href="/projects" class="{{ 'on' if active == 'projects' }}">Projects</a>
+    <a href="/vendors" class="{{ 'on' if active == 'vendors' }}">Vendors</a>
+    <a href="/settings" class="{{ 'on' if active == 'settings' }}">Settings</a>
+  </nav>
+  <form method="post" action="/logout" class="inline"><span class="muted">{{ user.name or user.username }}</span> <button class="link">Sign out</button></form>
+</header>
+{% endif %}
+<main>
+{% for f in flashes %}<div class="flash {{ f.kind }}">{{ f.message }}</div>{% endfor %}
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

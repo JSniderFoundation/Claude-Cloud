@@ -1,0 +1,56 @@
+{% extends "base.html" %}{% block title %}Needs waiver{% endblock %}
+{% block content %}
+<div class="stats">
+  <a class="stat" href="/"><b>{{ stats.needs }}</b><span>need a waiver</span></a>
+  <a class="stat" href="/waivers?status=sent"><b>{{ stats.sent }}</b><span>waiting on vendor</span></a>
+  <a class="stat {{ 'bad' if stats.overdue }}" href="/waivers?status=overdue"><b>{{ stats.overdue }}</b><span>overdue</span></a>
+  <a class="stat {{ 'bad' if stats.held }}" href="/vendors"><b>{{ stats.held }}</b><span>vendors on hold</span></a>
+</div>
+
+{% if held %}
+<div class="card hold">
+  <h2>On payment hold</h2>
+  <ul>{% for v in held %}<li><a href="/vendors/{{ v.id }}">{{ v.name }}</a> <span class="muted">{{ v.hold_reason }}</span></li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="row between">
+    <h1>Payments that need a waiver</h1>
+    <div><a class="btn" href="/payments/new">Add payment</a> <a class="btn" href="/import">Import CSV</a></div>
+  </div>
+  {% if not payments %}
+  <p class="muted">Nothing waiting. Add a payment or import a CSV to fill the queue.</p>
+  {% else %}
+  <form method="post" action="/queue/generate" id="gen">
+  <table class="grid">
+    <thead><tr>
+      <th><input type="checkbox" id="all" checked onclick="document.querySelectorAll('.pick').forEach(c=>c.checked=this.checked)"></th>
+      <th>Date</th><th>Vendor</th><th>Project</th><th class="num">Amount</th><th>Ref</th><th>Type</th>
+    </tr></thead>
+    <tbody>
+    {% for p in payments %}
+    <tr>
+      <td><input class="pick" type="checkbox" name="payment_id" value="{{ p.id }}" checked></td>
+      <td>{{ p.payment_date | shortdate }}</td>
+      <td><a href="/vendors/{{ p.vendor.id }}">{{ p.vendor.name }}</a>{% if not p.vendor.contact_email %} <span class="tag warn" title="No email on file">no email</span>{% endif %}{% if p.vendor.on_hold %} <span class="tag bad">hold</span>{% endif %}</td>
+      <td><a href="/projects/{{ p.project.id }}">{{ p.project.name }}</a>{% if p.project.bond_project %} <span class="tag">bond</span>{% endif %}</td>
+      <td class="num">{{ p.amount | money }}</td>
+      <td>{{ p.reference }}</td>
+      <td><select name="type_{{ p.id }}">
+        <option value="progress" {{ 'selected' if suggested[p.id] == 'progress' }}>Progress</option>
+        <option value="final" {{ 'selected' if suggested[p.id] == 'final' }}>Final</option>
+      </select></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="row gap">
+    <button class="primary" name="action" value="send">Generate and send selected</button>
+    <button name="action" value="draft">Generate as drafts</button>
+    <span class="muted">Sending emails the PDF and an upload link to each vendor and starts the return clock.</span>
+  </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

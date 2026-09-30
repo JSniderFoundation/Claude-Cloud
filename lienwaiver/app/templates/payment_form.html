@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% block title %}Add payment{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Add a payment</h1>
+  <p class="muted">Until the NetSuite sync is on, payments are entered here or imported from CSV. One row per vendor per project.</p>
+  <form method="post">
+    <label>Vendor <select name="vendor_id" required>{% for v in vendors %}<option value="{{ v.id }}">{{ v.name }}</option>{% endfor %}</select></label>
+    <label>Project <select name="project_id" required>{% for p in projects %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select></label>
+    <div class="row gap"><label>Payment date <input type="date" name="payment_date" value="{{ today }}" required></label>
+    <label>Amount <input name="amount" placeholder="12,345.67" required></label></div>
+    <div class="row gap"><label>Check / ACH ref <input name="reference"></label><label>Memo <input name="memo"></label></div>
+    <button class="primary">Add to queue</button>
+  </form>
+</div>
+{% endblock %}

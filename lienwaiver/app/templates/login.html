@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block title %}Sign in{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Lien Waivers</h1>
+  {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+  <form method="post" action="/login">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label>Username <input name="username" autofocus required></label>
+    <label>Password <input name="password" type="password" required></label>
+    <button class="primary">Sign in</button>
+  </form>
+</div>
+{% endblock %}

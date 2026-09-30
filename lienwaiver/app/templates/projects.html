@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% block title %}Projects{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="row between"><h1>Projects</h1><a class="btn primary" href="/projects/new">New project</a></div>
+  <table class="grid">
+    <thead><tr><th>Project</th><th>Job</th><th>Property</th><th>Owner</th><th>GC</th><th>Bond</th><th>Status</th></tr></thead>
+    <tbody>{% for p in projects %}
+    <tr class="{{ 'dim' if not p.active }}">
+      <td><a href="/projects/{{ p.id }}">{{ p.name }}</a></td><td>{{ p.job_number }}</td><td>{{ p.property_address }}</td>
+      <td>{{ p.owner_name }}</td><td>{{ p.gc_name }}</td><td>{{ 'Yes' if p.bond_project else '' }}</td>
+      <td>{{ 'Complete' if p.complete else ('Active' if p.active else 'Inactive') }}</td>
+    </tr>{% else %}<tr><td colspan="7" class="muted">No projects yet.</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
+{% endblock %}

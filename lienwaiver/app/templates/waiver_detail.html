@@ -1,0 +1,62 @@
+{% extends "base.html" %}{% block title %}{{ w.number }}{% endblock %}
+{% block content %}
+<div class="row between">
+  <h1>{{ w.number }} <span class="tag st-{{ w.display_status }}">{{ w.display_status }}</span></h1>
+  <div class="row gap">
+    {% if w.pdf_unsigned_path %}<a class="btn" href="/waivers/{{ w.id }}/pdf/unsigned" target="_blank">Unsigned PDF</a>{% endif %}
+    {% if w.pdf_signed_path %}<a class="btn primary" href="/waivers/{{ w.id }}/pdf/signed" target="_blank">Signed PDF</a>{% endif %}
+  </div>
+</div>
+<div class="cols">
+<div class="card">
+  <h2>{{ w.title }}</h2>
+  <dl>
+    <dt>Vendor</dt><dd><a href="/vendors/{{ w.vendor.id }}">{{ w.vendor.name }}</a> <span class="muted">{{ w.vendor.contact_email or 'no email on file' }}</span></dd>
+    <dt>Project</dt><dd><a href="/projects/{{ w.project.id }}">{{ w.project.name }}</a>{% if w.project.bond_project %} <span class="tag">bond language included</span>{% endif %}</dd>
+    <dt>Payment</dt><dd>{{ w.amount | money }}{% if w.payment %} on {{ w.payment.payment_date | shortdate }} {{ w.payment.reference }}{% endif %}</dd>
+    <dt>Sent</dt><dd>{{ w.sent_at | stamp or '—' }}</dd>
+    <dt>Due back</dt><dd>{{ w.due_at | shortdate or '—' }}{% if w.reminder_count %} <span class="muted">({{ w.reminder_count }} reminder(s), last {{ w.last_reminder_at | shortdate }})</span>{% endif %}</dd>
+    <dt>Received</dt><dd>{{ w.received_at | stamp or '—' }} {{ w.received_via }}</dd>
+    {% if w.void_reason %}<dt>Void</dt><dd>{{ w.void_reason }}</dd>{% endif %}
+    <dt>Vendor link</dt><dd><input readonly value="{{ portal_url }}" onclick="this.select()" class="wide mono"></dd>
+  </dl>
+
+  {% if w.status in ('draft', 'sent') %}
+  <div class="row gap">
+    <form method="post" action="/waivers/{{ w.id }}/send"><button class="primary">{{ 'Send to vendor' if w.status == 'draft' else 'Resend' }}</button></form>
+    <form method="post" action="/waivers/{{ w.id }}/regenerate"><button>Regenerate PDF</button></form>
+  </div>
+  <h3>Mark received</h3>
+  <form method="post" action="/waivers/{{ w.id }}/receive" enctype="multipart/form-data" class="row gap">
+    <input type="file" name="signed_pdf" accept="application/pdf" required>
+    <select name="via"><option value="upload">uploaded by staff</option><option value="email">came by email</option><option value="mail">came by mail, scanned</option></select>
+    <button>Save signed copy</button>
+  </form>
+  {% endif %}
+  {% if w.status != 'void' %}
+  <details class="danger"><summary>Void this waiver</summary>
+    <form method="post" action="/waivers/{{ w.id }}/void" class="row gap"><input name="reason" placeholder="Reason" required><button class="danger">Void</button></form>
+    <p class="muted">Voiding puts the payment back in the queue so a corrected waiver can be created.</p>
+  </details>
+  {% endif %}
+</div>
+
+<div class="card">
+  {% if w.status in ('draft', 'sent') %}
+  <h2>Edit</h2>
+  <form method="post" action="/waivers/{{ w.id }}/update">
+    <label>Type <select name="waiver_type"><option value="progress" {{ 'selected' if w.waiver_type == 'progress' }}>Progress</option><option value="final" {{ 'selected' if w.waiver_type == 'final' }}>Final</option></select></label>
+    <label>Through date <input type="date" name="through_date" value="{{ w.through_date }}" required></label>
+    <label>Retention withheld (progress only) <input name="retention" value="{{ w.retention }}"></label>
+    <label>Disputed amount (progress only) <input name="disputed" value="{{ w.disputed }}"></label>
+    <label>Other exceptions <textarea name="exceptions_text" rows="2">{{ w.exceptions_text }}</textarea></label>
+    <button>Save and regenerate PDF</button>
+  </form>
+  {% endif %}
+  <h2>Timeline</h2>
+  <ul class="timeline">
+    {% for e in w.events | reverse %}<li><span class="muted">{{ e.at | stamp }}</span> <b>{{ e.action }}</b> {{ e.detail }} <span class="muted">{{ e.user }}</span></li>{% endfor %}
+  </ul>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lien waiver {{ w.number }}</title><link rel="stylesheet" href="/static/style.css"></head>
+<body class="portal"><main>
+<div class="card narrow">
+  <h1>Lien waiver {{ w.number }}</h1>
+  <p><b>{{ w.vendor.name }}</b> · {{ w.project.name }} · {{ w.amount | money }}{% if w.payment %} paid {{ w.payment.payment_date | shortdate }}{% endif %}</p>
+  {% if done or w.status == 'received' %}
+    <div class="flash ok">Thank you. The signed waiver was received{% if w.received_at %} on {{ w.received_at | shortdate }}{% endif %}.</div>
+  {% elif w.status == 'void' %}
+    <div class="flash warn">This waiver has been cancelled. Please contact accounts payable.</div>
+  {% else %}
+    {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+    <ol class="steps">
+      <li><a class="btn primary" href="/p/{{ token }}/pdf" target="_blank">Download the waiver (PDF)</a></li>
+      <li>Print and sign it, or sign it electronically. No notary is needed.</li>
+      <li>Upload the signed PDF here{% if w.due_at %} by <b>{{ w.due_at | longdate }}</b>{% endif %}:
+        <form method="post" action="/p/{{ token }}/upload" enctype="multipart/form-data" class="row gap">
+          <input type="file" name="signed_pdf" accept="application/pdf" required>
+          <button class="primary">Upload signed waiver</button>
+        </form></li>
+    </ol>
+    <p class="muted">You can also reply to the email that brought you here with the signed PDF attached.</p>
+  {% endif %}
+</div>
+</main></body></html>

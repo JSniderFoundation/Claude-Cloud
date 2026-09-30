@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% block title %}Project{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>{{ 'Edit project' if p.id else 'New project' }}</h1>
+  <form method="post">
+    <label>Name <input name="name" value="{{ p.name }}" required></label>
+    <div class="row gap"><label>Job number <input name="job_number" value="{{ p.job_number }}"></label>
+    <label>NetSuite id <input name="netsuite_id" value="{{ p.netsuite_id or '' }}"></label></div>
+    <h3>Property (appears on the waiver)</h3>
+    <label>Street address <input name="address1" value="{{ p.address1 }}"></label>
+    <div class="row gap"><label>City <input name="city" value="{{ p.city }}"></label><label>State <input name="state" value="{{ p.state }}" size="2"></label><label>ZIP <input name="zip" value="{{ p.zip }}"></label></div>
+    <label>County <input name="county" value="{{ p.county }}"></label>
+    <label>Owner <input name="owner_name" value="{{ p.owner_name }}"></label>
+    <label>General contractor <input name="gc_name" value="{{ p.gc_name }}"></label>
+    <h3>Payment bond</h3>
+    <label class="check"><input type="checkbox" name="bond_project" {{ 'checked' if p.bond_project }}> This project has a payment bond. Waivers will also release bond claims.</label>
+    <div class="row gap"><label>Surety <input name="surety_name" value="{{ p.surety_name }}"></label><label>Bond number <input name="bond_number" value="{{ p.bond_number }}"></label></div>
+    <h3>Status</h3>
+    <label class="check"><input type="checkbox" name="complete" {{ 'checked' if p.complete }}> Complete (new waivers default to Final)</label>
+    <label class="check"><input type="checkbox" name="active" {{ 'checked' if p.active or not p.id }}> Active</label>
+    <label>Notes <textarea name="notes" rows="2">{{ p.notes }}</textarea></label>
+    <button class="primary">Save</button>
+  </form>
+</div>
+{% endblock %}

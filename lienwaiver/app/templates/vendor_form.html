@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% block title %}Vendor{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>{{ 'Edit vendor' if v.id else 'New vendor' }}</h1>
+  <form method="post">
+    <label>Legal name <input name="name" value="{{ v.name }}" required></label>
+    <label>NetSuite id <input name="netsuite_id" value="{{ v.netsuite_id or '' }}"></label>
+    <label>Address <input name="address1" value="{{ v.address1 }}"></label>
+    <label>Address line 2 <input name="address2" value="{{ v.address2 }}"></label>
+    <div class="row gap"><label>City <input name="city" value="{{ v.city }}"></label><label>State <input name="state" value="{{ v.state }}" size="2"></label><label>ZIP <input name="zip" value="{{ v.zip }}"></label></div>
+    <h3>Who signs waivers</h3>
+    <div class="row gap"><label>Contact name <input name="contact_name" value="{{ v.contact_name }}"></label>
+    <label>Contact email <input name="contact_email" type="email" value="{{ v.contact_email }}"></label></div>
+    <h3>Hold rule</h3>
+    <label>Mode <select name="hold_mode">
+      <option value="previous" {{ 'selected' if v.hold_mode == 'previous' }}>Previous payment gates the next (hold when a sent waiver is past due)</option>
+      <option value="exchange" {{ 'selected' if v.hold_mode == 'exchange' }}>Waiver in exchange for payment (hold while any waiver is outstanding)</option>
+    </select></label>
+    <label>Return window override, days <input name="return_days" value="{{ v.return_days or '' }}" placeholder="blank = company default"></label>
+    <label class="check"><input type="checkbox" name="active" {{ 'checked' if v.active or not v.id }}> Active</label>
+    <label>Notes <textarea name="notes" rows="2">{{ v.notes }}</textarea></label>
+    <button class="primary">Save</button>
+  </form>
+</div>
+{% endblock %}

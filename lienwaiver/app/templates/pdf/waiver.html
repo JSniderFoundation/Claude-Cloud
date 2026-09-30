@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{ w.number }} {{ w.title }}</title>
+<style>
+  @page { size: Letter; margin: 0.5in 0.8in 0.55in 0.8in;
+          @bottom-left { content: "{{ w.number }} · {{ company.company_name }}"; font: 8pt Helvetica, Arial, sans-serif; color: #666; }
+          @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8pt Helvetica, Arial, sans-serif; color: #666; } }
+  body { font: 10pt/1.32 Helvetica, Arial, sans-serif; color: #111; }
+  h1 { font-size: 13pt; text-align: center; margin: 0 0 2pt; letter-spacing: .3pt; text-transform: uppercase; }
+  .sub { text-align: center; font-size: 9pt; color: #444; margin-bottom: 6pt; }
+  table.facts { width: 100%; border-collapse: collapse; margin-bottom: 8pt; }
+  table.facts th, table.facts td { border: 1px solid #999; padding: 2pt 6pt; vertical-align: top; text-align: left; font-size: 9pt; }
+  table.facts th { width: 24%; background: #f0f0f0; font-weight: bold; }
+  p { margin: 0 0 5pt; text-align: justify; }
+  .exceptions td { padding: 1pt 6pt; font-size: 9pt; }
+  .exceptions { margin: 0 0 5pt 18pt; }
+  .warn { border: 1px solid #333; padding: 4pt 8pt; font-size: 9pt; margin: 5pt 0; }
+  .sig { margin-top: 8pt; page-break-inside: avoid; }
+  .sig table { width: 100%; border-collapse: collapse; }
+  .sig td { padding: 4pt 8pt 1pt 0; vertical-align: bottom; font-size: 9pt; }
+  .line { border-bottom: 1px solid #111; height: 14pt; }
+  .return { margin-top: 8pt; padding-top: 5pt; border-top: 1px dashed #999; font-size: 8pt; color: #333; display: flex; align-items: center; page-break-inside: avoid; }
+  .return img { width: 48pt; height: 48pt; margin-right: 10pt; }
+  .num { font-family: "Courier New", monospace; }
+</style>
+</head>
+<body>
+{% set progress = w.waiver_type == "progress" %}
+{% set bond = project.bond_project %}
+<h1>Unconditional Waiver and Release of Lien<br>upon {{ "Progress" if progress else "Final" }} Payment</h1>
+<div class="sub">State of Ohio &nbsp;·&nbsp; Waiver No. <span class="num">{{ w.number }}</span></div>
+
+<table class="facts">
+  <tr><th>Project</th><td>{{ project.name }}{% if project.job_number %} (Job {{ project.job_number }}){% endif %}</td></tr>
+  <tr><th>Property</th><td>{{ project.property_address }}{% if project.county %}, {{ project.county }} County, Ohio{% endif %}</td></tr>
+  <tr><th>Owner</th><td>{{ project.owner_name or "—" }}</td></tr>
+  <tr><th>General Contractor</th><td>{{ project.gc_name or "—" }}</td></tr>
+  {% if bond %}<tr><th>Payment Bond</th><td>{{ project.surety_name or "Surety on file" }}{% if project.bond_number %}, Bond No. {{ project.bond_number }}{% endif %}</td></tr>{% endif %}
+  <tr><th>Customer</th><td>{{ company.company_name }}{% if company.company_address %}, {{ company.company_address }}{% endif %}</td></tr>
+  <tr><th>Claimant</th><td><strong>{{ vendor.name }}</strong>{% for l in vendor.address_lines %}<br>{{ l }}{% endfor %}</td></tr>
+  <tr><th>Payment</th><td><strong>{{ w.amount | money }}</strong>
+    {% if w.payment %} paid {{ w.payment.payment_date | longdate }}{% if w.payment.reference %}, ref. <span class="num">{{ w.payment.reference }}</span>{% endif %}{% endif %}</td></tr>
+  <tr><th>{{ "Through Date" if progress else "Final Payment" }}</th><td>{{ w.through_date | longdate }}</td></tr>
+</table>
+
+{% if progress %}
+<p>The undersigned Claimant has received a progress payment in the amount of <strong>{{ w.amount | money }}</strong> from
+{{ company.company_name }} (the "Customer") for labor, services, equipment and materials furnished by Claimant
+to the Project described above through <strong>{{ w.through_date | longdate }}</strong> (the "Through Date").</p>
+
+<p>In consideration of that payment, receipt of which is acknowledged, Claimant unconditionally waives and releases
+any and all mechanics' lien rights, rights to assert a claim against the Property, {% if bond %}rights and claims
+against the payment bond and its surety, {% endif %}and any other right or claim against the Owner, the General
+Contractor, the Customer{% if bond %}, the Surety{% endif %} and the Property, arising out of or relating to labor,
+services, equipment or materials furnished by Claimant to the Project through the Through Date,
+<strong>except</strong> for the following, which are not waived:</p>
+<table class="exceptions">
+  <tr><td>(a)</td><td>Retention withheld through the Through Date: <strong>{{ w.retention | money }}</strong></td></tr>
+  <tr><td>(b)</td><td>Disputed claims through the Through Date: <strong>{{ w.disputed | money }}</strong></td></tr>
+  <tr><td>(c)</td><td>{{ w.exceptions_text or "Labor, services, equipment or materials furnished after the Through Date." }}</td></tr>
+</table>
+<p>Claimant represents that all of its subcontractors, suppliers and laborers who furnished labor, services, equipment
+or materials to the Project through the Through Date have been paid in full, or will be paid in full from this payment,
+and that no other person has any claim through Claimant against the Owner, the General Contractor, the Customer{% if bond %}, the Surety{% endif %} or the Property for that work, except as listed above.</p>
+{% else %}
+<p>The undersigned Claimant has received final payment in the amount of <strong>{{ w.amount | money }}</strong> from
+{{ company.company_name }} (the "Customer"), which together with all prior payments constitutes payment in full for
+all labor, services, equipment and materials furnished by Claimant to the Project described above.</p>
+
+<p>In consideration of that payment, receipt of which is acknowledged, Claimant unconditionally waives and releases
+any and all mechanics' lien rights, rights to assert a claim against the Property, {% if bond %}rights and claims
+against the payment bond and its surety, {% endif %}and any other right or claim against the Owner, the General
+Contractor, the Customer{% if bond %}, the Surety{% endif %} and the Property, arising out of or relating to labor,
+services, equipment or materials furnished by Claimant to the Project at any time.</p>
+
+<p>Claimant certifies that all of its subcontractors, suppliers and laborers who furnished labor, services, equipment or
+materials to the Project have been paid in full; that there are no outstanding claims, liens, change orders, back
+charges or amounts due to Claimant on the Project; and that Claimant will defend, indemnify and hold harmless the Owner,
+the General Contractor, the Customer{% if bond %}, the Surety{% endif %} and the Property from any claim or lien asserted
+by or through Claimant or any of its subcontractors, suppliers or laborers relating to the Project.
+{% if w.exceptions_text %} Exceptions: {{ w.exceptions_text }}{% endif %}</p>
+{% endif %}
+
+<div class="warn">This is an <strong>unconditional</strong> waiver. It is effective when signed and is not conditioned on
+the payment clearing. Do not sign it unless you have received the payment described above. The person signing
+represents that they are authorized to bind Claimant.</div>
+
+<div class="sig">
+<table>
+  <tr><td style="width:60%">Claimant (company):</td><td>Date:</td></tr>
+  <tr><td><div class="line"><strong>{{ vendor.name }}</strong></div></td><td><div class="line"></div></td></tr>
+  <tr><td>Signature:</td><td>Printed name:</td></tr>
+  <tr><td><div class="line"></div></td><td><div class="line"></div></td></tr>
+  <tr><td>Title:</td><td></td></tr>
+  <tr><td><div class="line"></div></td><td></td></tr>
+</table>
+</div>
+
+{% if portal_url %}
+<div class="return">
+  <img src="{{ qr }}" alt="QR">
+  <div><strong>Return the signed copy</strong> by uploading it at<br><span class="num">{{ portal_url }}</span><br>
+  or by replying to the email that delivered this waiver. Questions: {{ company.company_name }} Accounts Payable{% if company.company_phone %}, {{ company.company_phone }}{% endif %}.</div>
+</div>
+{% endif %}
+</body>
+</html>

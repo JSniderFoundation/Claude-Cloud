@@ -1,6 +1,6 @@
 # Lien Waiver Tool — Design
 
-**Status:** Draft for discussion · **Owner:** Finance Systems · **Date:** 2026-09-29
+**Status:** Decisions made, phase 1 built (`lienwaiver/`) · **Owner:** Finance Systems · **Date:** 2026-09-30
 
 ## 1. What we are building
 
@@ -32,7 +32,21 @@ A small tool that, for every payment we make to one of our subs or suppliers, pr
 - Because the waiver is unconditional, its wording states the vendor **has been paid** the stated amount. That drives the timing decision in §2.
 - This design is not legal advice. Have counsel read the final template text once before go-live.
 
-## 2. Decisions to make before building
+## 2. Decisions
+
+**Made 2026-09-30:**
+
+| # | Decision |
+|---|---|
+| D1 | Standalone app with NetSuite sync (option A). |
+| D2 | Waiver for the previous payment gates the next one, 7-day return window. The exchange pattern stays available per vendor. |
+| D3 | Projects are a custom field in NetSuite. The app holds the property address, owner, GC and bond details. |
+| D4 | Microsoft 365 for email and file mirroring. |
+| D5 | Hosting: whichever is easier; an old office machine is available. Recommendation: Docker on that machine with a Cloudflare Tunnel for the public vendor-upload URL (see `lienwaiver/README.md`). |
+| D6 | Bond claim language only on projects flagged as bond projects. |
+
+The original options, for the record:
+
 
 ### D1. Where the tool lives: standalone app, or inside NetSuite
 

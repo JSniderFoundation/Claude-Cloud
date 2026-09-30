@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="cols">
+<div class="card">
+  <h1>Company</h1>
+  <form method="post" action="/settings">
+    <label>Company name (the "Customer" on the waiver) <input name="company_name" value="{{ values.company_name }}"></label>
+    <label>Company address <input name="company_address" value="{{ values.company_address }}"></label>
+    <label>AP phone (printed on the waiver) <input name="company_phone" value="{{ values.company_phone }}"></label>
+    <h3>Timing</h3>
+    <div class="row gap">
+      <label>Return window, days <input name="default_return_days" value="{{ values.default_return_days }}" size="4"></label>
+      <label>Remind days before due <input name="reminder_days_before_due" value="{{ values.reminder_days_before_due }}" size="4"></label>
+      <label>Then every N days after due <input name="reminder_every_days_after_due" value="{{ values.reminder_every_days_after_due }}" size="4"></label>
+    </div>
+    <h3>Email</h3>
+    <label>Intro line in the vendor email <textarea name="email_intro" rows="2">{{ values.email_intro }}</textarea></label>
+    <button class="primary">Save</button>
+  </form>
+</div>
+<div class="card">
+  <h2>Environment</h2>
+  <dl>
+    <dt>Public URL</dt><dd class="mono">{{ env.base_url }}</dd>
+    <dt>Email backend</dt><dd>{{ env.email_backend }} from {{ env.email_from }}</dd>
+    <dt>AP notifications</dt><dd>{{ env.ap_notify_email or '(not set)' }}</dd>
+    <dt>NetSuite</dt><dd>{{ env.netsuite_backend }}{% if env.netsuite_backend == 'fake' %} (holds are recorded here, not pushed){% endif %}</dd>
+    <dt>PDF folder</dt><dd class="mono">{{ env.pdf_dir }}</dd>
+  </dl>
+  <form method="post" action="/holds/run"><button>Run reminders and hold check now</button> <span class="muted">Runs automatically once a day.</span></form>
+  {% if ns_calls %}
+  <h3>Recent hold calls to NetSuite</h3>
+  <ul class="timeline">{% for c in ns_calls %}<li><b>{{ 'SET' if c.on_hold else 'CLEAR' }}</b> {{ c.vendor }} <span class="muted">{{ c.reason }}</span></li>{% endfor %}</ul>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

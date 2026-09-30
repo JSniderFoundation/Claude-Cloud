@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% block title %}{{ p.name }}{% endblock %}
+{% block content %}
+<div class="row between"><h1>{{ p.name }}{% if p.bond_project %} <span class="tag">bond</span>{% endif %}{% if p.complete %} <span class="tag">complete</span>{% endif %}</h1>
+  <div class="row gap"><a class="btn" href="/waivers?project={{ p.id }}">Waivers</a><a class="btn" href="/projects/{{ p.id }}/edit">Edit</a></div></div>
+<div class="cols">
+<div class="card">
+  <dl>
+    <dt>Job</dt><dd>{{ p.job_number or '—' }}</dd>
+    <dt>Property</dt><dd>{{ p.property_address or '—' }}{% if p.county %}, {{ p.county }} County{% endif %}</dd>
+    <dt>Owner</dt><dd>{{ p.owner_name or '—' }}</dd>
+    <dt>GC</dt><dd>{{ p.gc_name or '—' }}</dd>
+    {% if p.bond_project %}<dt>Surety</dt><dd>{{ p.surety_name or '—' }} {{ p.bond_number }}</dd>{% endif %}
+    {% if p.notes %}<dt>Notes</dt><dd>{{ p.notes }}</dd>{% endif %}
+  </dl>
+</div>
+<div class="card">
+  <h2>Waiver coverage by vendor</h2>
+  <table class="grid">
+    <thead><tr><th>Vendor</th><th class="num">Paid</th><th class="num">Waived</th><th class="num">Waiver out</th><th class="num">No waiver</th></tr></thead>
+    <tbody>{% for c in coverage %}
+    <tr><td><a href="/vendors/{{ c.vendor.id }}">{{ c.vendor.name }}</a>{% if c.vendor.on_hold %} <span class="tag bad">hold</span>{% endif %}</td>
+      <td class="num">{{ c.paid | money }}</td><td class="num">{{ c.waived | money }}</td>
+      <td class="num {{ 'warn' if c.open }}">{{ c.open | money }}</td><td class="num {{ 'bad' if c.missing }}">{{ c.missing | money }}</td></tr>
+    {% else %}<tr><td colspan="5" class="muted">No payments on this project yet.</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
+</div>
+{% endblock %}

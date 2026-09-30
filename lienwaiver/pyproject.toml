@@ -1,0 +1,22 @@
+[project]
+name = "lienwaiver"
+version = "0.1.0"
+description = "Create, send and track unconditional lien waivers for vendor payments"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy>=2.0",
+    "jinja2>=3.1",
+    "weasyprint>=62",
+    "python-multipart>=0.0.9",
+    "itsdangerous>=2.2",
+    "httpx>=0.27",
+    "qrcode[pil]>=7.4",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pypdf>=4"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
