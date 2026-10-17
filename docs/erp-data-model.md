@@ -307,12 +307,12 @@ Four flows share one work order structure:
 | subcontract | Our agreement with an install sub | sub, type (master agreement, project), master agreement (a project subcontract copies its lines, which can then change), project, buildings or releases covered, retainage rule, retainage release trigger, payment terms, insurance requirements, committed value (sum of its lines), status |
 | subcontract_line | One priced line of a subcontract: a rate or a lump sum | subcontract, line number, scope (cabinet install, RTA assembly on site, top install, hardware, punch, go-back, service, haul, extra work), basis (per unit, per cabinet box, per LF, per countertop SF, per hour, per trip, lump sum), applies to (all, a unit type, amenity or common units, an item category, or a building or release for lump sums), LF measured on (box widths, or LF scope lines), milestone type (drives the suggested % on lump sums), rate or scheduled value, estimated quantity (from the spine; entered by hand for hourly and trip lines), committed amount, retainage override, cost code, change event, effective dates |
 | sub_pay_app | A sub's pay request, drafted from verified completed work | sub, subcontract, period, type (progress, retainage release, final), sub's invoice number, status (draft, sent to sub, accepted, disputed, approved, billed, void); lines with subcontract line, source record, unit, quantity (counted from the spine; a manual change needs a reason), rate, amount, retainage; lump-sum lines carry previous %, this period %, to-date % and a suggested %; backcharges deducted; net. Approval creates the vendor bill. |
-| time_entry | Hours or piece work by an employee, or hours a sub submits for hourly work | worker kind (employee, sub), employee or sub and worker name, date, regular and OT hours (required on piece work too), pay type (hourly, piece), quantity and piece rate, project, cost code, unit or install order line, or work order and operation, work classification (blank unless the project is prevailing wage), T&M ticket, status (submitted, approved, paid), approved by |
+| time_entry | Hours or piece work by an employee, or hours a sub submits for hourly work | worker kind (employee, sub), employee or sub and worker name, date, regular and OT hours (required on piece work too), pay type (hourly, piece), quantity and piece rate, project, cost code, unit or install order line, or work order and operation, work classification (blank unless the project is prevailing wage), T&M ticket, status (submitted, approved, paid), approved by. Sub entries get no burden and post nothing; they only supply hours to the sub pay app. |
 | daily_log | Field report | project, date, crew, work done, units touched, delays (not ready, damaged by others), photos |
 | punch_item | A defect to fix | project, unit, area, source (our pre-punch, GC, owner or architect), description, responsible (us or another trade), crew, status, photos before and after |
 | service_ticket | A warranty or service call after turnover | project, unit, reported by (property manager), issue, covered by warranty or billable, visits, cost, status |
 
-A precut piece is delivered only after the unit's `cabinets installed` milestone (and a passed cabinet check, if you use one). A custom piece is delivered only after QC passes.
+A precut piece is delivered only after the unit's `cabinets installed` milestone. Whether a cabinet check is used, and whether a failed one blocks delivery, is open question 2. A custom piece is delivered only after QC passes.
 
 **Paying subs.** Each pay app line points to exactly one source record, and the quantity comes from the spine:
 
@@ -321,7 +321,7 @@ A precut piece is delivered only after the unit's `cabinets installed` milestone
 | Per unit (flat or by unit type) | Install order line | 1, with the rate looked up by the unit's unit type |
 | Per cabinet box | Install order line | That unit's unit scope lines in the line's areas, item category base, wall, tall or vanity |
 | Per LF | Install order line | Box widths from cabinet_spec, or LF scope lines (molding, splash) |
-| Per countertop SF | Install order line (top install) | SF of that unit's installed countertop pieces, any source |
+| Per countertop SF | Install order line (top install) | SF of that unit's installed countertop pieces in the line's areas, any source |
 | Per trip | A delivery the sub hauled, or a go-back install order | 1 |
 | Per hour | Approved sub time entry | Hours |
 | Lump sum per building | The subcontract line itself | % complete, suggested from units in the building with the line's milestone done |
@@ -329,7 +329,7 @@ A precut piece is delivered only after the unit's `cabinets installed` milestone
 Rules:
 
 1. A unit and scope are on only one open install order line.
-2. Each measured source record (install order line, hauled delivery or go-back, approved sub time entry) is paid once per subcontract and scope, whichever line prices it. A rate change closes the old line, and the new rate applies to work completed from its effective date. A second completed line for a unit and scope that was already paid is a go-back or a backcharge, not a second full payment. If the unit's scope changes later, only the difference is proposed, tagged with the change event.
+2. Each measured source record (install order line, hauled delivery or go-back, approved sub time entry) is paid once per subcontract, scope and measure (units, boxes, LF, SF, trips, hours), whichever line prices it. So a box line and a molding-LF line can both pay the same install order line, but two box lines never can. A rate change closes the old line, and the new rate applies to work completed from its effective date. A second completed line for a unit and scope that was already paid is a go-back or a backcharge, not a second full payment. If the unit's scope changes later, only the difference is proposed, tagged with the change event.
 3. A unit and scope can't be covered by both a lump sum and a unit rate. Several unit-rate lines can cover the same unit and scope if they measure different things (boxes and molding LF, or top SF and splash LF). Hourly and trip lines are only for work outside the measured scope.
 4. A lump sum is paid by % to date and can't pass 100%.
 
@@ -367,11 +367,11 @@ Retainage follows the subcontract's rule line by line. Backcharges are deducted 
 
 - **Off site** (only on contracts that allow on and off site): received stock reserved to the project, in a location the contract approves. Our warehouse counts only if the contract lists it. Lot-tracked stock (blanks, carton lots, precut lots) must first be moved to a bin set aside for the project, so the bill of sale names real goods.
 - **In production:** issuing stored stock to a work order passes the reservation and the claim to the work order and then to its output. The claim follows RTA cartons into assembled cabinets, and slabs or blanks into pieces. Remnants either stay reserved to the project or leave the claim.
-- **On site:** delivered lines with a signed POD, for units that don't yet have the install milestone for that stock's division (`cabinets installed` for cabinet stock, `top installed` for countertop stock).
+- **On site:** delivered lines with a signed POD, for units that don't yet have the install milestone for that stock's division (`cabinets installed` for cabinet stock, `top installed` for countertop stock). The stock must still be at the jobsite. A line drops out once its stock is returned from the job, or its countertop piece is rejected or void. A rejected piece reused in another unit moves its listing to that unit.
 
 Goods in transit and vendor deposits don't count. The stock must match the SOV line's building or release and cost group. Precut tops, blanks and slabs qualify under the same rules as cabinets.
 
-The listing is rebuilt for each pay app and frozen on submission. When the unit's install milestone for that division is set, its materials leave stored and show up in completed, so nothing is billed twice. If completed is typed above the milestone suggestion while those units' stock is still listed as stored, the system warns. Completed plus stored can't exceed the scheduled value. Where the contract or SOV line doesn't allow stored materials, the column stays at zero. A pay app with stored lines can't be submitted until the backup the contract requires is attached and our insurance certificate is current.
+The listing is rebuilt for each pay app and frozen on submission. When the unit's install milestone for that division is set, its materials leave stored and show up in completed, so nothing is billed twice. If completed is typed above the milestone suggestion while those units' stock is still listed as stored, submission is blocked until those units' stored lines are removed. Completed plus stored can't exceed the scheduled value. Where the contract or SOV line doesn't allow stored materials, the column stays at zero. A pay app with stored lines can't be submitted until the backup the contract requires is attached and our insurance certificate is current.
 
 #### Accounts payable
 
@@ -395,7 +395,7 @@ Today's lien waiver app maps directly onto this: its Vendor, Project, Payment, W
 | job_budget | Budget per project and cost code | project, cost code, original (from the winning estimate), approved changes (from change orders), revised, cost to complete (forecast), forecast at completion, version |
 | commitment | Costs we've agreed to but not yet billed (view) | open PO lines (precut POs are large early commitments) and subcontract lines (lump sums, plus rate × estimated quantity) by project and cost code: committed, invoiced, earned not billed (what a draft sub pay app would propose at period end, on every basis), remaining |
 | job_cost | Actual cost (view) | journal lines with a project and cost code: material issued, labor, subs, freight and duty, equipment |
-| labor_burden_rate | Loaded cost of an hour | employee class, period, payroll tax %, Ohio BWC %, benefits %; applied to time entries |
+| labor_burden_rate | Loaded cost of an hour | employee class, period, payroll tax %, Ohio BWC %, benefits %; applied to employee time entries |
 | wip_snapshot | Frozen month-end WIP schedule per project | period, contract value with approved changes, estimated total cost, cost to date, % complete (cost-to-cost), earned revenue, billed to date, stored materials billed (off site and on site), inventory held against stored billing, over or under billing (in total and excluding stored materials), gross profit, change from last month (fade) |
 
 **Billing stored materials doesn't change cost to date.** Stock off site is still our inventory, so % complete doesn't move. The billing shows as overbilling until the stock is delivered to site, which is when its cost hits the job.
@@ -479,24 +479,24 @@ Unit 2-204, type B1-M (mirrored B1), Building 2:
 | Domestic bill matched | GRNI, price variance | AP, Vendor deposits (if any) |
 | Freight, duty, fees and brokerage bills | Landed cost clearing | AP |
 | Landed cost allocated at receipt (estimates where bills haven't arrived) | Inventory | Landed cost clearing |
+| Landed cost true-up when actual bills differ from estimates | Inventory (goods still on hand), job cost: freight and duty, or landed cost variance | Landed cost clearing (reverse the sides when actual is below estimate) |
 | Demurrage and detention | Expense, or job cost when a job caused the delay | AP |
 | Duty adjusted when the customs entry liquidates | Job cost: freight and duty (or duty variance if it can't be traced) | AP (reverse the sides for a refund) |
 | Vendor claim or bill credit | AP (or vendor claims receivable until credited) | Inventory or job cost, wherever the original cost sits |
 | Components issued to a work order (cartons, slabs, blanks, precut tops for prep) | Production WIP | Inventory |
-| Shop labor on a work order (burdened) | Production WIP | Labor clearing |
 | Work order completed | Inventory (finished) | Production WIP |
 | Remnant returned to stock (from a nest, or a rejected precut piece kept as a remnant) | Inventory (remnant) | Production WIP, or job cost: material |
 | Delivery to site (issue to job) | Job cost: material (project, cost code) | Inventory |
 | Precut piece trucked back to stock after a failed fit | Inventory | Job cost: material |
 | Payroll imported | Labor clearing (office payroll straight to expense) | Cash, payroll liabilities |
-| Field and shop time distributed (burdened) | Job cost: labor, production WIP, or overhead (indirect time) | Labor clearing |
+| Employee time distributed, burdened (field time to jobs, work order time to production, the rest to overhead) | Job cost: labor, production WIP, or overhead | Labor clearing |
 | Sub pay app approved | Job cost: subcontract | AP, AP retainage |
 | Backcharge deducted on a sub pay app | AP (or AP retainage, when taken from retainage) | Job cost (the project and cost code that carried the repair) |
 | Sub retainage released | AP retainage | AP |
 | Month-end accrual of completed, unbilled sub work (reverses next period) | Job cost: subcontract | Accrued subcontract cost |
 | Use tax on purchases | Inventory or job cost | Use tax payable |
 | Pay app approved (including any stored materials) | AR, AR retainage | Contract revenue |
-| GC backcharge accepted (pay app deduction or credit memo) | Job cost: backcharges (or contract revenue, if it is really a price reduction; per CPA) | AR |
+| GC backcharge accepted (pay app deduction, credit memo, or retainage at final) | Job cost: backcharges (or contract revenue, if it is really a price reduction; per CPA) | AR (or AR retainage, when taken from retainage) |
 | Retainage release invoiced to the customer | AR | AR retainage |
 | Customer payment | Cash | AR or AR retainage |
 | Month-end WIP, job overbilled (reverses next period) | Contract revenue | Contract liability |
@@ -542,7 +542,7 @@ Notes:
 
 1. **Foundation, parties, project and unit matrix (including countertop design pieces), items.** Everything else depends on these.
 2. **CRM and estimating.** This is the biggest gap today and carries no accounting risk. It also creates the scope data every later module reuses.
-3. **Operations: purchasing and imports (cabinets, precut tops, blanks, domestic slabs), inventory, production, field (templates, install order lines, subcontract lines, sub time entries with the classification field).** INNERGY is replaced at this stage.
+3. **Operations: purchasing and imports (cabinets, precut tops, blanks, domestic slabs), inventory, production, field (templates, install order lines, subcontract lines, employee and sub time entries with the work classification field).** INNERGY is replaced at this stage.
 4. **Finance subledgers: AR pay apps with stored materials, AP with sub pay apps, job cost.** These feed NetSuite with summarized journals while both systems run in parallel. Stored materials depend on the reservations, work orders and deliveries built in step 3.
 5. **GL cutover from NetSuite last,** at a fiscal year start, after at least one quarter of parallel running. Payroll processing stays with a provider for good.
 
