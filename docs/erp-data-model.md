@@ -14,7 +14,7 @@
 | Stored materials | Billable on some contracts, not all |
 | Prevailing wage | None today, but possible. The data model is ready, and that part is built when the first such bid arrives. |
 | Accounting | GAAP. Revenue follows ASC 606; costs and inventory follow GAAP. Statements aren't audited, reviewed or compiled today. |
-| Sales commissions | Paid to employees on the base contract only, as a % of contract value today (margin-based plans also supported). Reps must still be employed to be paid. |
+| Sales commissions | Paid to employees on the base contract only, as a % of contract value today (margin-based plans also supported). Paid in portions: at award, during the project and at the end. Reps must still be employed to be paid each portion. |
 | Currency | US dollars only, imports included |
 | Today's systems | NetSuite (GL, AP, projects as a custom segment), INNERGY (BOMs, work orders, inventory), the lien waiver app, Microsoft 365 |
 | Goal | Our own ERP as the system of record for CRM, operations and finance, including the general ledger |
@@ -398,17 +398,17 @@ Today's lien waiver app maps directly onto this: its Vendor, Project, Payment, W
 
 | Entity | What it is | Key fields |
 |---|---|---|
-| commission_plan | A sales rep's commission terms | payee (employees only today; outside reps could be added later), basis (% of base contract value, or % of base contract margin), rate, margin measured at (award estimate, or actual at closeout; margin plans only), paid when (at award, as billed, or as collected), rep must still be employed to be paid (yes today), GAAP treatment (set by your CPA), clawback terms, effective dates |
-| commission | Commission on one base contract | plan, payee, contract, basis amount (base contract value or margin), rate, amount (trued up at closeout on margin plans that use actual margin), booked date, treatment (capitalized; expensed under the one-year option; or expensed as pay over the time the rep must stay), amortized or expensed to date, written off, forfeited (rep left before being paid), clawed back, paid to date (payroll run lines), status (accrued, partly paid, paid, forfeited, clawed back, void) |
+| commission_plan | A sales rep's commission terms | payee (employees only today; outside reps could be added later), basis (% of base contract value, or % of base contract margin), rate, margin measured at (award estimate, or actual at closeout; margin plans only), rep must still be employed to be paid (yes today), clawback terms, effective dates; portions, each with a share of the commission, a trigger (award, as billed, as collected, a % complete milestone, completion, or final payment) and a GAAP treatment (set by your CPA) |
+| commission | Commission on one base contract | plan, payee, contract, basis amount (base contract value or margin), rate, amount (trued up at closeout on margin plans that use actual margin), booked date, amortized or expensed to date, written off, clawed back, status (open, closed, void); portions with amount, treatment (capitalized; expensed under the one-year option; or expensed as pay until paid), expected payment dates, due to date, paid to date, forfeited, status (pending, partly paid, paid, forfeited); payments with portion, payroll run line and amount |
 
 Commissions are paid on the base contract only; change orders don't earn commission. They're a sales cost, never a cost of doing the work:
 
 - **Never job cost.** They post to capitalized contract costs or to selling expense, depending on the treatment below, never to job cost, the job budget or % complete.
 - **Amortized with the job.** When capitalized, the asset is amortized each month by the contract's % complete from the WIP snapshot. GAAP allows expensing the commission at once instead when the job will last a year or less. Whether to use that option is an `accounting_policy`.
 - **Written off when it can't be recovered.** If a job is cancelled, or its remaining revenue less remaining cost no longer covers the unamortized commission, the difference is written off.
-- **Treatment depends on when it's paid.** Reps must stay employed to be paid. If a commission is paid soon after award, it's usually capitalized as a cost of winning the contract. If it's paid over the life of the job, your CPA may treat it as pay for staying employed and expense it over that time instead. Your CPA sets the treatment once per plan (open question 7).
-- **Forfeited when a rep leaves.** Entering an employee's termination date forfeits their unpaid commissions and reverses them.
-- **Paid through payroll.** Reps are employees, so commissions are paid through payroll, and the payroll import clears accrued commissions instead of labor clearing. Whether the employer payroll taxes on commissions are capitalized with them is also an `accounting_policy`.
+- **Treatment depends on the portion.** The award portion is paid soon after the contract is won, so it's usually capitalized as a cost of winning the contract. To receive the portions paid during and at the end of the project, the rep must stay employed for months or years. Those are usually treated as pay for staying and expensed over the time until each payment is expected. Your CPA sets the treatment once for each portion of a plan.
+- **Forfeited when a rep leaves.** Entering an employee's termination date forfeits whatever hasn't been paid and reverses what was booked for it.
+- **Paid through payroll.** Reps are employees, so commissions are paid through payroll. A portion comes due as its trigger is met, and is paid on the next payroll if the rep is still employed. The payroll import clears accrued commissions instead of labor clearing, and any part not yet accrued is expensed when paid. Whether the employer payroll taxes on commissions are capitalized with them is also an `accounting_policy`.
 
 #### Job cost and WIP
 
@@ -448,7 +448,7 @@ Revenue follows ASC 606, and costs and inventory follow GAAP. The table shows wh
 | Contract balances | Underbillings are contract assets and overbillings are contract liabilities. Retainage is a receivable or a contract asset depending on its terms (per CPA). | account subtypes; month-end WIP entries |
 | Inventory cost | Purchase price, freight, duty, brokerage, and production labor and overhead (at normal capacity) are capitalized. Abnormal costs, such as demurrage and idle shop time, are expensed. Inventory is carried at the lower of cost and net realizable value. | `landed_cost_charge` capitalize flag; overhead and write-down rows in section 7; month-end review of obsolete precut revisions, damaged pieces and remnants |
 | Warranty | Our standard warranty is accrued as a cost as revenue is earned, and warranty work is charged against that reserve. | warranty rows in section 7; `service_ticket`; accrual rate in `accounting_policy` |
-| Costs of winning work | Bid costs are expensed. Commissions on won contracts are capitalized and amortized by the job's % complete, or expensed at once on jobs of a year or less if that GAAP option is elected. Because reps must stay employed to be paid, your CPA may instead treat some commissions as pay for staying, expensed over that time. Either way, they never count as job cost or toward % complete. | `commission_plan`, `commission`, `accounting_policy`; commission rows in section 7; open question 7 |
+| Costs of winning work | Bid costs are expensed. The award portion of a commission is capitalized and amortized by the job's % complete, or expensed at once on jobs of a year or less if that GAAP option is elected. The portions paid during and at the end of the project require the rep to stay employed, so they're usually expensed over the time until they're paid, as pay for staying. Your CPA confirms both. Either way, commissions never count as job cost or toward % complete. | `commission_plan` portions, `commission`, `accounting_policy`; commission rows in section 7 |
 | Leases | Leased buildings, trucks and equipment go on the balance sheet as right-of-use assets and lease liabilities. | `lease` **(later)**, built with the GL cutover. Until then, lease accounting stays where it is today, and nothing else in the model needs to know which assets are leased. |
 | Accruals | Costs are recorded when incurred: unbilled sub work, goods received but not invoiced, wages and commissions earned but not paid. | sub accrual, GRNI, labor clearing, accrued commissions |
 | Disclosures | Not built from day one: the statements aren't audited, reviewed or compiled, so there are no footnotes to support yet. The data for remaining performance obligations and revenue breakdowns is kept anyway, so a later review or audit needs no restructuring. | reports in section 8 |
@@ -505,7 +505,7 @@ Prevailing wage adds no GL postings. Rate and fringe differences flow through pa
 Unit 2-204, type B1-M (mirrored B1), Building 2:
 
 1. **Bid.** Estimating builds the B1 and B1-M scope lines: base and wall cabinets, a vanity, a 42 SF quartz kitchen top in two pieces with one undermount sink cutout, and a vanity top. No shop drawings exist yet. The kitchen top is priced as precut: per SF by price group plus cutout charges, the landed-cost factor and the duty rates assumed. The vanity top is priced as custom from an imported blank: blank landed cost over expected yield, plus template and fabrication labor. Scope v2 is priced as three estimates, one for each GC's bid.
-2. **Award.** One GC wins the project and awards it to us. Scope v2 becomes the contract baseline. SOV lines are set per building and division, and the job budget by cost code comes from the estimate. The contract allows stored materials on and off site, lists our warehouse as approved storage, and requires a bill of sale, photos and an inventory listing. The countertop shop drawings go out as a submittal. On approval they become design pieces K1 and K2 (seamed together, planned precut) and V1 (custom from blank), for B1 and for B1-M separately. The sales rep's commission, a % of the base contract value paid soon after award, is booked as a capitalized contract cost, since the job runs longer than a year.
+2. **Award.** One GC wins the project and awards it to us. Scope v2 becomes the contract baseline. SOV lines are set per building and division, and the job budget by cost code comes from the estimate. The contract allows stored materials on and off site, lists our warehouse as approved storage, and requires a bill of sale, photos and an inventory listing. The countertop shop drawings go out as a submittal. On approval they become design pieces K1 and K2 (seamed together, planned precut) and V1 (custom from blank), for B1 and for B1-M separately. The sales rep's commission is a % of the base contract value, paid in portions: at award, during the project and at completion. The award portion is booked as a capitalized contract cost, since the job runs longer than a year. The later portions start accruing as pay for staying employed.
 3. **Release.** As soon as K1 and K2 are approved, Building 2's planned release creates precut demand. The GC's look-ahead then puts cabinets on Building 2, floors 1 to 3, starting March 1. Release R-2.1 explodes the scope into `unit_scope_line`s and countertop pieces for 48 units and computes the cabinet material requirement.
 4. **Buy.** Two import POs go out, each with a 30% deposit:
    - precut tops: one item per design piece; quantity = the B1-M units in the release plus spares
@@ -522,8 +522,8 @@ Unit 2-204, type B1-M (mirrored B1), Building 2:
    - **Vanity, custom.** V1 is templated, nested on one blank from lot B-0312, fabricated, QC'd and installed.
    - **Done.** `top installed` is set when every piece is in. The tops installer's pay line counts the SF of the installed pieces.
 9. **Bill.** On the pay app, the "Bldg 2 cabinets" line suggests its % complete from units with `cabinets installed`. Floor 3's cabinets are in the warehouse, received, reserved and set aside in a project bin, so the system offers them as stored materials. Their reservations lock, and the inventory listing and bill of sale print from the stored lines. Units installed this month leave the stored listing and count as completed instead. On a contract that didn't allow stored materials, the column would stay at zero. The GC approves and the AR invoice posts with retainage. When payment arrives, our waiver goes to the GC.
-10. **Close the month.** Job cost is compared with budget and the forecast is updated. Completed sub work that hasn't been billed yet is accrued: install lines, hauled trips, approved hours and lump-sum progress. The WIP snapshot computes earned revenue under the GAAP rules. Precut tops delivered to floor 2 but not yet installed earn revenue at cost only. If the forecast showed a loss, the whole loss would be booked now. The snapshot posts the over or under billing entry, which reverses next month, and the warranty reserve accrues on the revenue earned. The rep's capitalized commission is amortized by the same % complete. Floor 3's cabinets are still inventory, not job cost, so their stored billing shows as overbilling until they're delivered to site.
-11. **Turnover.** The unit is punched and accepted. The retainage release is invoiced at closeout, which moves AR retainage to AR with no new revenue. The sub's retainage is released against their final waiver. Warranty tickets for 2-204 attach to the unit for the warranty term, and their cost is charged to the warranty reserve.
+10. **Close the month.** Job cost is compared with budget and the forecast is updated. Completed sub work that hasn't been billed yet is accrued: install lines, hauled trips, approved hours and lump-sum progress. The WIP snapshot computes earned revenue under the GAAP rules. Precut tops delivered to floor 2 but not yet installed earn revenue at cost only. If the forecast showed a loss, the whole loss would be booked now. The snapshot posts the over or under billing entry, which reverses next month, and the warranty reserve accrues on the revenue earned. The rep's capitalized award portion is amortized by the same % complete, and the later portions accrue for another month. Floor 3's cabinets are still inventory, not job cost, so their stored billing shows as overbilling until they're delivered to site.
+11. **Turnover.** The unit is punched and accepted. The retainage release is invoiced at closeout, which moves AR retainage to AR with no new revenue. The sub's retainage is released against their final waiver, and the rep's final commission portion goes on the next payroll, since they're still employed. Warranty tickets for 2-204 attach to the unit for the warranty term, and their cost is charged to the warranty reserve.
 
 ## 7. What posts to the GL
 
@@ -563,8 +563,8 @@ Unit 2-204, type B1-M (mirrored B1), Building 2:
 | Provision for an expected contract loss (adjusted monthly) | Cost of revenue: provision for losses | Accrued loss on contracts |
 | Warranty accrued as revenue is earned | Cost of revenue: warranty | Warranty reserve |
 | Warranty work performed | Warranty reserve | Inventory, labor clearing or AP |
-| Commission booked on a won contract (capitalized treatment; later true-ups too) | Capitalized contract costs (or selling expense: commissions, on a job of a year or less if that option is elected) | Accrued commissions |
-| Commission treated as pay for staying, accrued monthly over the time the rep must stay | Selling expense: commissions | Accrued commissions |
+| Award portion of a commission booked (capitalized treatment; later true-ups too) | Capitalized contract costs (or selling expense: commissions, on a job of a year or less if that option is elected) | Accrued commissions |
+| Later portions treated as pay for staying, accrued monthly until paid | Selling expense: commissions | Accrued commissions |
 | Capitalized commission amortized by the job's % complete | Selling expense: commissions | Capitalized contract costs |
 | Commission written off (job cancelled, or remaining margin can't cover it) | Selling expense: commissions | Capitalized contract costs |
 | Commission forfeited (rep left before being paid) or clawed back | Accrued commissions (or a receivable from the rep, if already paid) | Capitalized contract costs (unamortized part), selling expense: commissions (expensed part) |
@@ -591,7 +591,7 @@ Notes:
 | Backlog (remaining performance obligations) | contract, change_order, change_event, wip_snapshot |
 | WIP schedule and profit fade, with stored materials, uninstalled materials and loss provisions shown separately | wip_snapshot by period |
 | Revenue by division, customer type and source | journal_line dimensions, contract, party_role |
-| Commissions by rep (booked, paid, forfeited, unamortized) and job profit after commission | commission, wip_snapshot |
+| Commissions by rep (booked, paid, forfeited, unamortized, coming due) and job profit after commission | commission, wip_snapshot |
 | Inventory below cost (obsolete precut revisions, damaged, slow-moving, remnants) | lot, serial, inventory_txn, cost_layer |
 | Lease schedules and maturities **(later)** | lease |
 | Job cost vs budget, cost to complete | job_budget, commitment, journal_line |
@@ -609,7 +609,7 @@ Notes:
 | AR aging with retainage, expected pay dates | ar_invoice, customer_profile |
 | AP aging and holds | vendor_bill, payment_hold |
 | Compliance (COIs expiring, waivers outstanding, notice deadlines, certified payroll on prevailing wage jobs) | compliance_document, lien_waiver_in, notice, certified_payroll |
-| Cash forecast | ar_invoice, customer_profile (typical days to pay), vendor_bill, vendor_deposit, purchase_order, shipment, payroll_run |
+| Cash forecast | ar_invoice, customer_profile (typical days to pay), vendor_bill, vendor_deposit, purchase_order, shipment, payroll_run, commission |
 
 ## 9. Build order (recommendation)
 
@@ -637,6 +637,7 @@ Rationale: the GL is the riskiest and least distinctive piece, and NetSuite alre
 - Sales commissions are tied to winning contracts and paid on the base contract only, not on change orders.
 - Commissions are a % of contract value today. Plans based on margin must also be supported.
 - Only employees earn commissions today, and they must still be employed to be paid.
+- Commissions are paid in portions: some at award, some during the project and the rest at the end.
 - Some assets are leased and some are owned. The model doesn't need to track which yet.
 - Financial statements aren't audited, reviewed or compiled today.
 
@@ -649,7 +650,7 @@ Rationale: the GL is the riskiest and least distinctive piece, and NetSuite alre
 - Each contract is one performance obligation satisfied over time, with progress measured by cost-to-cost and a monthly WIP schedule. That is the usual GAAP treatment for this work. Confirm with your CPA and your bonding company's format.
 - Uninstalled-materials treatment applies to goods we buy finished (domestic cabinets, precut tops), not to goods we make (cabinets we assemble, tops we fabricate).
 - Warranties are our standard assurance warranty. No extended warranties are sold separately.
-- Commissions on jobs of a year or less are expensed (the GAAP one-year option). Longer jobs capitalize and amortize them, unless your CPA treats them as pay for staying employed (open question 7).
+- The award portion of a commission is capitalized and amortized, or expensed at once on jobs of a year or less (the GAAP one-year option). The portions paid during and at the end of the project are expensed as pay for staying employed, over the time until each is paid. Confirm both with your CPA.
 - Material cost hits the job when it is delivered to site. Until then it is inventory reserved to the job, so it doesn't inflate % complete. This holds even when the GC has paid for it as stored materials: the billing sits in overbillings, not cost.
 - Stored materials are valued at landed cost, backed by vendor invoices and landed cost charges, unless the contract says otherwise. Our warehouse is approved storage only where a contract lists it.
 - Precut tops are ordered per building (planned release) against approved design pieces, not for the whole project in one order.
@@ -673,18 +674,17 @@ Rationale: the GL is the riskiest and least distinctive piece, and NetSuite alre
 4. Does the bill of sale pass title to the owner or GC? Under GAAP that bears on whether the customer controls the stock, and so whether it is still our inventory.
 5. Which materials does your CPA treat as eligible for the uninstalled-materials rule? The draft assumes goods we buy finished, not goods we make.
 6. Are remnants carried at a share of cost or at zero? Either way they're tested against net realizable value.
-7. When is a commission paid: at award, as the job is billed, or as it's collected? Because reps must stay employed to be paid, this decides the GAAP treatment, which is your CPA's call. Paid soon after award, it's usually capitalized as a cost of winning the contract. Paid over the life of the job, it may instead be treated as pay for staying employed and expensed over that time.
 
 *Subs and payroll*
 
-8. Do any subcontracts pay the sub only after the GC pays us (pay-when-paid)? If yes, sub pay app lines need a link to the customer payment.
-9. Do sub rate cards carry across projects as master agreements, or is every project negotiated?
-10. When you pay per LF, is it the sum of box widths or LF scope lines (both modeled), or the wall run measured on plan (which would add an LF field to each area)?
-11. Do your own W-2 crews get piece pay on the same bases (per box, per unit, per SF)?
-12. Which payroll provider do you use, and can it produce certified payroll reports?
+7. Do any subcontracts pay the sub only after the GC pays us (pay-when-paid)? If yes, sub pay app lines need a link to the customer payment.
+8. Do sub rate cards carry across projects as master agreements, or is every project negotiated?
+9. When you pay per LF, is it the sum of box widths or LF scope lines (both modeled), or the wall run measured on plan (which would add an LF field to each area)?
+10. Do your own W-2 crews get piece pay on the same bases (per box, per unit, per SF)?
+11. Which payroll provider do you use, and can it produce certified payroll reports?
 
 *Company*
 
-13. Do you ever sell material only, with no install (to other contractors, or slab and blank remnants to the public)? That adds a simple sales order flow.
-14. How many warehouse and shop locations?
-15. Will you need more than one legal entity, for example a separate importing company?
+12. Do you ever sell material only, with no install (to other contractors, or slab and blank remnants to the public)? That adds a simple sales order flow.
+13. How many warehouse and shop locations?
+14. Will you need more than one legal entity, for example a separate importing company?
