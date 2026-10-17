@@ -1,6 +1,6 @@
 # ERP Data Model: Cabinets and Countertops for Multifamily
 
-**Status:** Draft for discussion, nothing built · **Owner:** Finance Systems · **Date:** 2026-10-17 (revised with countertop, billing, sub pay and prevailing wage corrections)
+**Status:** Draft for discussion, nothing built · **Owner:** Finance Systems · **Date:** 2026-10-17 (revised with countertop, billing, sub pay, prevailing wage, currency and GAAP corrections)
 
 ## 1. The business this models
 
@@ -13,6 +13,8 @@
 | Install | Our own W-2 crews and subcontracted installers. Subs can be paid per unit, per cabinet box, per LF or SF, or lump sum per building. |
 | Stored materials | Billable on some contracts, not all |
 | Prevailing wage | None today, but possible. The data model is ready, and that part is built when the first such bid arrives. |
+| Accounting | GAAP. Revenue follows ASC 606; costs and inventory follow GAAP. |
+| Currency | US dollars only, imports included |
 | Today's systems | NetSuite (GL, AP, projects as a custom segment), INNERGY (BOMs, work orders, inventory), the lien waiver app, Microsoft 365 |
 | Goal | Our own ERP as the system of record for CRM, operations and finance, including the general ledger |
 
@@ -29,6 +31,7 @@ This document covers the data structure only: what the system records and how th
 7. **Compliance is data.** Insurance certificates, lien waivers, notices, certified payroll and holds are records with dates, so the system can block a payment or warn about a deadline. The lien waiver app becomes one module of the ERP.
 8. **Integrate where the rules aren't ours.** Payroll tax filing, bank feeds, e-signature, tax rates and CAD/nesting software stay in specialist tools. The ERP owns the data they produce.
 9. **Pay once, bill once.** Every sub pay app line and every stored-materials claim points to the record that proves it: a verified unit, a reserved slab, an approved timesheet, or for a lump sum, the % complete suggested from unit milestones. The same record can't be paid or billed twice.
+10. **GAAP by design.** Revenue, cost, inventory and accruals post the way GAAP requires, so month-end statements need no adjustments made outside the system. Where GAAP needs judgment (estimates to complete, which materials count as uninstalled, reserves), the system records the judgment, who made it and when.
 
 ## 3. Map
 
@@ -92,7 +95,7 @@ project ─┬─ building ─ floor ─ unit ───────────�
 - Amenity and common spaces are units too: kind `amenity` (clubhouse kitchen) or `common` (leasing office, mail room), each with its own unit type. No separate structure is needed.
 - **Scope is versioned.** Each estimate revision is a scope version. The winning version becomes the contract baseline. Each executed change order produces a new current version. You can always answer "what did we bid, what did we sign, what are we building now."
 - **Cabinet sourcing is decided per release, not per estimate.** A scope line says *what* goes in the unit ("B18, Shaker White"). The `unit_scope_line` says *how* it's fulfilled: assembled from imported RTA cartons, bought assembled from a domestic vendor, or built in-house. You can switch a release to domestic when an import container is late without touching the estimate or the contract.
-- **Top sourcing is planned per design piece and can switch late in one direction only.** Each countertop design piece has a planned source: precut, custom from a domestic slab, or custom from an imported blank. Precut pieces are ordered from the approved shop drawings well ahead of each planned release, against the units of each type in that release (per building; see open question 3). A release or a single piece can switch from precut to custom at short notice, for example when a container is late or a piece doesn't fit. That switch adds a template and fabrication. Switching from custom to precut needs the full import lead time. The actual source lives on each `countertop_piece`, and a unit scope line for tops shows the source derived from its pieces, or "mixed".
+- **Top sourcing is planned per design piece and can switch late in one direction only.** Each countertop design piece has a planned source: precut, custom from a domestic slab, or custom from an imported blank. Precut pieces are ordered from the approved shop drawings well ahead of each planned release, against the units of each type in that release (per building; see open question 2). A release or a single piece can switch from precut to custom at short notice, for example when a container is late or a piece doesn't fit. That switch adds a template and fabrication. Switching from custom to precut needs the full import lead time. The actual source lives on each `countertop_piece`, and a unit scope line for tops shows the source derived from its pieces, or "mixed".
 - **Templating follows the source.** A countertop area is templated if any of its pieces is custom cut, after the unit's `cabinets installed` milestone. Precut pieces are never templated. No flag on the unit type is needed.
 - What drives the planned top source (rules, not fields): the repeat count of the unit type; whether the drawings are approved early enough for the precut lead time; whether the piece fits a blank; which colors each source offers; estimated cost per SF by source; and field risk (ADA, amenity and irregular walls lean custom). The SF of the design pieces in an area should match the scope line SF, which catches takeoff drift.
 
@@ -100,7 +103,7 @@ project ─┬─ building ─ floor ─ unit ───────────�
 
 - `id`, `company_id` (legal entity; one today, but cheap to add now and painful to add later), `created_at`, `created_by`, `updated_at`, `updated_by`.
 - `external_ref`: NetSuite and INNERGY ids, for migration and parallel running.
-- Money is exact decimal (`numeric(14,2)`), or integer cents as in the lien waiver app. Never float. A `currency` field goes wherever a foreign supplier is involved. Quantities are `numeric(14,4)` with a unit of measure.
+- Money is exact decimal (`numeric(14,2)`), or integer cents as in the lien waiver app. Never float. Everything is in US dollars, imports included, so there are no currency fields or FX postings. Quantities are `numeric(14,4)` with a unit of measure.
 - Transaction documents have a header and lines, a `number` from a per-type sequence, and a `status`. They are never deleted, only voided with a reason.
 - Master data has an `active` flag instead of being deleted.
 - Side tables any record can use: `attachment`, `note`, `activity`, `event` (audit trail) and `status_history`. All five are defined in 5.1 and 5.2.
@@ -114,7 +117,7 @@ Key fields only. Foreign keys are written as the entity name (for example, `proj
 
 | Entity | What it is | Key fields |
 |---|---|---|
-| company | Legal entity that owns a set of books | name, EIN, address, base currency, fiscal year start |
+| company | Legal entity that owns a set of books | name, EIN, address, fiscal year start |
 | user | A login | party (person), email, roles, active |
 | role, permission | Access control and segregation of duties | role name; permissions such as create vendor, edit bank details, approve bill, release ACH batch |
 | approval_rule | When a document needs approval and by whom | document type, conditions (amount tier, division, project), approver steps, delegate |
@@ -186,9 +189,9 @@ The cost basis snapshot makes an estimate reproducible. It holds item costs, lab
 
 | Entity | What it is | Key fields |
 |---|---|---|
-| contract | Our agreement with the GC or owner | project, customer, type (subcontract, purchase order, owner direct), number, executed date, original value, retainage rule (for example 10% until 50% complete, then 5%), payment terms, billing format, insurance requirements, waiver requirements, stored materials terms (below), warranty term, backcharge terms, status |
+| contract | Our agreement with the GC or owner | project, customer, type (subcontract, purchase order, owner direct), number, executed date, original value, performance obligations (normally one; if your CPA splits a contract, each SOV line maps to one and WIP runs per obligation), retainage rule (for example 10% until 50% complete, then 5%), payment terms, billing format, insurance requirements, waiver requirements, stored materials terms (below), warranty term, backcharge terms, status |
 | sov_line | Schedule of values line for pay apps | contract, line number, description (for example "Bldg 1 cabinets material"), division, scheduled value, retainage %, stored materials (inherits the contract's value and can only narrow it; defaults to not allowed on install lines), linked building or release and cost group, milestone type that drives the suggested % (defaults by cost group: cabinet lines use `cabinets installed`, top lines `top installed`) |
-| change_event | Anything that might change cost or price | project, source (GC directive, RFI, owner upgrade, field condition, shop drawing revision after a precut order, our error), status (potential, priced, submitted, approved, rejected), estimated cost and price |
+| change_event | Anything that might change cost or price | project, source (GC directive, RFI, owner upgrade, field condition, shop drawing revision after a precut order, our error), status (potential, priced, submitted, scope approved but unpriced, approved, rejected), estimated cost and price, amount included in the WIP estimate (for unpriced approved changes and claims: only what probably won't have to be reversed) |
 | change_order | An executed change | contract, our number, GC's number, amount, schedule days, executed date; lines with SOV line, price, and budget change by cost code |
 | tm_ticket | Time and materials work signed in the field | project, date, labor hours, materials, signed by, change event |
 | backcharge | A charge between parties | direction (GC to us, us to sub or vendor), project, party, source (remake, punch item, service ticket, damage report, GC backcharge passed through), passes through (the GC backcharge this one recovers), reason, amount, photos, status, applications (pay app deduction, sub pay app deduction, credit memo, bill credit, retainage at final; partial allowed), remaining amount |
@@ -211,10 +214,10 @@ The cost basis snapshot makes an estimate reproducible. It holds item costs, lab
 
 | Entity | What it is | Key fields |
 |---|---|---|
-| item | Anything we buy, make, stock or sell | SKU, description, type (inventory, non-inventory, labor, service), category (base, wall, tall, vanity, filler, panel, molding, RTA carton, slab, blank, precut top, sink, hardware, sheet goods, consumable), unit of measure, tracking (none, lot, serial), costing method, division, default accounts |
+| item | Anything we buy, make, stock or sell | SKU, description, type (inventory, non-inventory, labor, service), category (base, wall, tall, vanity, filler, panel, molding, RTA carton, slab, blank, precut top, sink, hardware, sheet goods, consumable), unit of measure, tracking (none, lot, serial), costing method, division, default accounts, uninstalled-materials eligible (set with your CPA) |
 | cabinet_spec | Cabinet attributes for matching and estimating | item, line or series, door style, finish, construction, width, height, depth, nomenclature (B18, W3030, VSB30), hinge side, finished ends |
 | countertop_material | Stone attributes for slab, blank and precut top items | item, brand, color, price group, thickness (2cm, 3cm), finish, nominal size (slabs and blanks) |
-| item_vendor | A way to buy an item | item, vendor, vendor SKU, price, currency, minimum order, lead time, carton count, CBM, weight, country of origin, HTS code, effective dates, preferred |
+| item_vendor | A way to buy an item | item, vendor, vendor SKU, price, minimum order, lead time, carton count, CBM, weight, country of origin, HTS code, effective dates, preferred |
 | bom | How an item is made or assembled | parent item, revision, type (RTA assembly, manufacture); components with item, quantity and scrap % |
 | routing | Shop steps to make an item | parent item, operations with work center and standard minutes |
 | work_center | A shop resource | name (RTA assembly, saw, CNC, edge polisher, cabinet bench, QC), division, labor rate, overhead rate, hours per day |
@@ -230,7 +233,7 @@ One stone color can exist as a slab item, a blank item, and a precut top item fo
 | Entity | What it is | Key fields |
 |---|---|---|
 | material_requirement | Computed demand | item, quantity, need date, project, release, available, reserved, on order, shortfall. Computed from released units, and from planned releases for long-lead items, so precut tops can be ordered as soon as their design pieces are approved. |
-| purchase_order | An order to a vendor | vendor, type (import, domestic, hardware, other), project (cabinet and precut POs are project-specific; blank and slab POs can be for stock), ship-to (warehouse or site), currency, incoterms, terms (for example 30% deposit, balance against bill of lading), status, approval |
+| purchase_order | An order to a vendor | vendor, type (import, domestic, hardware, other), project (cabinet and precut POs are project-specific; blank and slab POs can be for stock), ship-to (warehouse or site), incoterms, terms (for example 30% deposit, balance against bill of lading), status, approval |
 | po_line | One line of a PO | item, quantity, price, need date, project, unit type and design piece (precut), release (optional; can be assigned later), cost code, received quantity, billed quantity |
 | vendor_deposit | Prepayment on an import PO | PO, amount, paid date, payment, amount applied to bills |
 | shipment | A container or truckload | mode (ocean FCL, LCL, truck, LTL), carrier, container number, bill of lading, origin port, ETD, ETA port, ETA warehouse, last free day, customs broker, status (booked, sailed, arrived, released, delivered, empty returned) |
@@ -286,7 +289,7 @@ Four flows share one work order structure:
 | field_measure | A countertop template, or an optional cabinet check before precut delivery | purpose (template for custom pieces, cabinet check for precut), units, area, method (digital template, laser, tape), scheduled date (only after `cabinets installed`), actual date, templater, DXF files, result (actual piece dimensions, or pass/fail with deviations from the drawing), issues found (cabinets out of level) |
 | countertop_piece | One piece of stone for one unit | unit, area, design piece (optional, for one-offs such as an amenity kitchen), label (K1, K2, V1), source (precut, custom from slab, custom from blank) and override reason, material, thickness, length, width, SF, edge LF and profile, splash LF and height, cutouts, seams, DXF, field measure (custom only), variance from design, precut item and lot (precut) or nest (custom), work order, actual cost, fit result (precut: as-is, field-adjusted, did not fit), status (planned, ordered, received, templated, nested, cut, fabricated, QC passed, loaded, delivered, installed, rejected, void) |
 | nest | Pieces laid out on a slab, blank or remnant | material (slab serial, remnant serial, or blank item, lot and number of blanks), pieces, yield % (piece SF ÷ (material SF − usable remnant SF)), remnant serials created, file |
-| remake | A piece or seamed group that had to be made again | scope (one piece, or the seamed group), original pieces, reason (mis-measure, fab error, install damage, material defect, change, precut did not fit, supplier cut error, transit damage), responsible (us, another trade, vendor), replacement source, replacement pieces, shade match accepted by (GC or architect, when only one piece of a seamed group is remade from different material), original piece disposition (back to stock, reused on site in another unit, kept as a remnant, scrapped, vendor claim), cost, backcharge, vendor claim |
+| remake | A piece or seamed group that had to be made again | scope (one piece, or the seamed group), original pieces, reason (mis-measure, fab error, install damage, material defect, change, precut did not fit, supplier cut error, transit damage), responsible (us, another trade, vendor), replacement source, replacement pieces, shade match accepted by (GC or architect, when only one piece of a seamed group is remade from different material), original piece disposition (back to stock, reused on site in another unit, kept as a remnant, scrapped, vendor claim), cost, excluded from progress (a significant inefficiency the contract price didn't allow for; set with your CPA), backcharge, vendor claim |
 | quality_check | An inspection | work order, piece, or receipt line (precut tops and blanks checked on arrival against the drawing for size, cutouts, chips and shade), checklist, result, photos, inspector |
 
 **How a remake works.** A remake creates new replacement pieces for the unit. The originals keep their source and go to status `rejected`.
@@ -310,9 +313,9 @@ Four flows share one work order structure:
 | time_entry | Hours or piece work by an employee, or hours a sub submits for hourly work | worker kind (employee, sub), employee or sub and worker name, date, regular and OT hours (required on piece work too), pay type (hourly, piece), quantity and piece rate, project, cost code, unit or install order line, or work order and operation, work classification (blank unless the project is prevailing wage), T&M ticket, status (submitted, approved, paid), approved by. Sub entries get no burden and post nothing; they only supply hours to the sub pay app. |
 | daily_log | Field report | project, date, crew, work done, units touched, delays (not ready, damaged by others), photos |
 | punch_item | A defect to fix | project, unit, area, source (our pre-punch, GC, owner or architect), description, responsible (us or another trade), crew, status, photos before and after |
-| service_ticket | A warranty or service call after turnover | project, unit, reported by (property manager), issue, covered by warranty or billable, visits, cost, status |
+| service_ticket | A warranty or service call after turnover | project, unit, reported by (property manager), issue, covered by warranty or billable, visits, cost (charged to the warranty reserve when covered), status |
 
-A precut piece is delivered only after the unit's `cabinets installed` milestone. Whether a cabinet check is used, and whether a failed one blocks delivery, is open question 2. A custom piece is delivered only after QC passes.
+A precut piece is delivered only after the unit's `cabinets installed` milestone. Whether a cabinet check is used, and whether a failed one blocks delivery, is open question 1. A custom piece is delivered only after QC passes.
 
 **Paying subs.** Each pay app line points to exactly one source record, and the quantity comes from the spine:
 
@@ -341,8 +344,8 @@ Retainage follows the subcontract's rule line by line. Backcharges are deducted 
 
 | Entity | What it is | Key fields |
 |---|---|---|
-| account | Chart of accounts | number, name, type (asset, liability, equity, revenue, cost of revenue, expense), subtype (bank, AR, AR retainage, inventory, inventory in transit, production WIP, contract asset, contract liability, vendor deposits, vendor claims receivable, GRNI, AP, AP retainage, accrued subcontract cost, landed cost clearing, labor clearing, payroll liabilities, use tax payable, accumulated depreciation, purchase price variance, landed cost variance, duty variance, FX gain/loss), active |
-| cost_code | Job cost category | code, name, category (material, labor, subcontract, equipment, freight and duty, backcharges, other), division |
+| account | Chart of accounts | number, name, type (asset, liability, equity, revenue, cost of revenue, expense), subtype (bank, AR, AR retainage, inventory, inventory in transit, production WIP, contract asset, contract liability, vendor deposits, vendor claims receivable, GRNI, AP, AP retainage, accrued subcontract cost, accrued loss on contracts, warranty reserve, capitalized contract costs, landed cost clearing, labor clearing, overhead applied, payroll liabilities, use tax payable, accumulated depreciation, right-of-use asset, lease liability, purchase price variance, landed cost variance, duty variance), active |
+| cost_code | Job cost category | code, name, category (material, labor, subcontract, equipment, freight and duty, backcharges, warranty, other), division, excluded from progress (inefficiency costs that don't count toward % complete) |
 | division, department | Reporting dimensions | name |
 | fiscal_period | Accounting periods | year, period, start, end, status per module (open, soft close, closed) |
 | journal_entry | A posted entry | date, period, source (manual, AR, AP, payment, receipt, inventory, payroll, WIP, accrual, depreciation), source document, memo, status (draft, posted, reversed), reverses, auto-reverse date |
@@ -396,7 +399,7 @@ Today's lien waiver app maps directly onto this: its Vendor, Project, Payment, W
 | commitment | Costs we've agreed to but not yet billed (view) | open PO lines (precut POs are large early commitments) and subcontract lines (lump sums, plus rate × estimated quantity) by project and cost code: committed, invoiced, earned not billed (what a draft sub pay app would propose at period end, on every basis), remaining |
 | job_cost | Actual cost (view) | journal lines with a project and cost code: material issued, labor, subs, freight and duty, equipment |
 | labor_burden_rate | Loaded cost of an hour | employee class, period, payroll tax %, Ohio BWC %, benefits %; applied to employee time entries |
-| wip_snapshot | Frozen month-end WIP schedule per project | period, contract value with approved changes, estimated total cost, cost to date, % complete (cost-to-cost), earned revenue, billed to date, stored materials billed (off site and on site), inventory held against stored billing, over or under billing (in total and excluding stored materials), gross profit, change from last month (fade) |
+| wip_snapshot | Frozen month-end WIP schedule per project (or performance obligation) | period, transaction price (contract value, executed change orders, unpriced approved changes and claims at their included amount, price reductions), estimated total cost, cost to date, inefficiency costs excluded, uninstalled materials cost, % complete, earned revenue, provision for loss, billed to date, stored materials billed (off site and on site), inventory held against stored billing, over or under billing (in total and excluding stored materials), gross profit, change from last month (fade), estimates approved by and at |
 
 **Billing stored materials doesn't change cost to date.** Stock off site is still our inventory, so % complete doesn't move. The billing shows as overbilling until the stock is delivered to site, which is when its cost hits the job.
 
@@ -410,7 +413,41 @@ Example: a $480,000 contract for 48 units, with $360,000 estimated cost, of whic
 | Earned revenue | $0 | $240,000 |
 | Overbilling | $300,000 | $150,000, exactly the stored balance |
 
-Material delivered to site is already in cost to date, so billing it as on-site stored doesn't create an overbilling. If it is billed at cost, the job shows an underbilling equal to the margin on that material. Whether that margin can be recognized before install is open question 6.
+Material delivered to site but not yet installed falls under the uninstalled-materials rule below. For eligible goods, revenue equals cost until install, so billing them as on-site stored at cost leaves neither an overbilling nor an underbilling.
+
+#### GAAP rules built into the model
+
+Revenue follows ASC 606, and costs and inventory follow GAAP. The table shows where each rule lives in the data. Judgments (estimates, eligibility, reserves, policies) are recorded with who made them and when.
+
+| Topic | Rule | Where it lives |
+|---|---|---|
+| Revenue over time | Each contract is normally one performance obligation, satisfied over time because we build on the owner's property. Progress is measured by cost-to-cost. A change in estimate is a cumulative catch-up adjustment. | `contract` performance obligations; `wip_snapshot` recomputes cumulative earned revenue each month, and the change from last month is the fade |
+| Transaction price | Executed change orders count. Approved changes that aren't priced yet, and claims, count only up to an amount that probably won't have to be reversed. Amounts paid or credited to the GC (backcharges, liquidated damages) reduce the price, unless they buy a distinct service from the GC. | `change_event` amount included in the WIP estimate; `wip_snapshot` transaction price; GC backcharge row in section 7 |
+| Uninstalled materials | Goods delivered to the site but not yet installed earn revenue equal to their cost, with no margin, when they aren't distinct, the customer controls them, their cost is significant, and we didn't design or make them. Their cost is left out of % complete. | `item` uninstalled-materials eligible; delivery lines for units without the install milestone give the cost |
+| Inefficiencies | Significant wasted materials or labor that the contract price didn't allow for, such as remakes beyond the normal allowance, are expensed and left out of % complete. | `remake` and `cost_code` excluded from progress |
+| Loss contracts | As soon as estimated total cost exceeds the transaction price, the whole expected loss is recognized. | `wip_snapshot` provision for loss; loss row in section 7 |
+| Contract balances | Underbillings are contract assets and overbillings are contract liabilities. Retainage is a receivable or a contract asset depending on its terms (per CPA). | account subtypes; month-end WIP entries |
+| Inventory cost | Purchase price, freight, duty, brokerage, and production labor and overhead (at normal capacity) are capitalized. Abnormal costs, such as demurrage and idle shop time, are expensed. Inventory is carried at the lower of cost and net realizable value. | `landed_cost_charge` capitalize flag; overhead and write-down rows in section 7; month-end review of obsolete precut revisions, damaged pieces and remnants |
+| Warranty | Our standard warranty is accrued as a cost as revenue is earned, and warranty work is charged against that reserve. | warranty rows in section 7; `service_ticket` |
+| Costs of winning work | Bid costs are expensed. Incremental costs of winning a contract, such as sales commissions, are capitalized and amortized as the job progresses, unless the job lasts a year or less. | capitalized contract costs account; open question 7 |
+| Leases | Leased buildings, trucks and equipment go on the balance sheet as right-of-use assets and lease liabilities. | `lease` |
+| Accruals | Costs are recorded when incurred: unbilled sub work, goods received but not invoiced, wages earned but not paid. | sub accrual, GRNI, labor clearing |
+| Disclosures | Remaining performance obligations (backlog) and revenue broken down by type. | reports in section 8 |
+
+**Earned revenue each month,** per contract (or performance obligation). Let:
+
+- P = transaction price
+- T = estimated total cost (excluding inefficiency costs)
+- C = cost to date (excluding inefficiency costs)
+- U = cost of eligible materials delivered but not yet installed
+
+Then:
+
+- % complete = (C − U) ÷ (T − U)
+- Earned revenue = U + % complete × (P − U)
+- If T is more than P, the provision for loss brings the job's total recognized loss to T − P now.
+
+This follows the uninstalled-materials example in ASC 606's implementation guidance. When nothing is uninstalled (U = 0), it is ordinary cost-to-cost. Confirm the method and the eligible materials with your CPA.
 
 #### Payroll (provider-run, ERP-owned data)
 
@@ -432,7 +469,7 @@ Material delivered to site is already in cost to date, so billing it as on-site 
 
 Prevailing wage adds no GL postings. Rate and fringe differences flow through payroll.
 
-#### Cash, tax and assets
+#### Cash, tax, assets and leases
 
 | Entity | What it is | Key fields |
 |---|---|---|
@@ -442,6 +479,7 @@ Prevailing wage adds no GL postings. Rate and fringe differences flow through pa
 | tax_rate | Ohio sales and use tax by county | jurisdiction, rate, effective dates |
 | tax_exemption_certificate | Exemption documentation | project or customer, type, document, expires |
 | fixed_asset | CNC, saws, forklifts, trucks | description, cost, in-service date, method, life, location, GL accounts; depreciation schedule |
+| lease | A lease where we're the tenant: warehouse, shop, trucks, forklifts | lessor, asset, type (operating, finance), start date, term, payments, renewal options we expect to use, discount rate, right-of-use asset, lease liability, schedule (leases of 12 months or less can be left off) |
 
 ## 6. One kitchen, end to end
 
@@ -465,8 +503,8 @@ Unit 2-204, type B1-M (mirrored B1), Building 2:
    - **Vanity, custom.** V1 is templated, nested on one blank from lot B-0312, fabricated, QC'd and installed.
    - **Done.** `top installed` is set when every piece is in. The tops installer's pay line counts the SF of the installed pieces.
 9. **Bill.** On the pay app, the "Bldg 2 cabinets" line suggests its % complete from units with `cabinets installed`. Floor 3's cabinets are in the warehouse, received, reserved and set aside in a project bin, so the system offers them as stored materials. Their reservations lock, and the inventory listing and bill of sale print from the stored lines. Units installed this month leave the stored listing and count as completed instead. On a contract that didn't allow stored materials, the column would stay at zero. The GC approves and the AR invoice posts with retainage. When payment arrives, our waiver goes to the GC.
-10. **Close the month.** Job cost is compared with budget and the forecast is updated. Completed sub work that hasn't been billed yet is accrued: install lines, hauled trips, approved hours and lump-sum progress. The WIP snapshot computes earned revenue and over or under billing, then posts the adjusting entry, which reverses next month. Floor 3's cabinets are still inventory, not job cost, so their stored billing shows as overbilling until they're delivered to site.
-11. **Turnover.** The unit is punched and accepted. The retainage release is invoiced at closeout, which moves AR retainage to AR with no new revenue. The sub's retainage is released against their final waiver. Warranty tickets for 2-204 attach to the unit for the warranty term.
+10. **Close the month.** Job cost is compared with budget and the forecast is updated. Completed sub work that hasn't been billed yet is accrued: install lines, hauled trips, approved hours and lump-sum progress. The WIP snapshot computes earned revenue under the GAAP rules. Precut tops delivered to floor 2 but not yet installed earn revenue at cost only. If the forecast showed a loss, the whole loss would be booked now. The snapshot posts the over or under billing entry, which reverses next month, and the warranty reserve accrues on the revenue earned. Floor 3's cabinets are still inventory, not job cost, so their stored billing shows as overbilling until they're delivered to site.
+11. **Turnover.** The unit is punched and accepted. The retainage release is invoiced at closeout, which moves AR retainage to AR with no new revenue. The sub's retainage is released against their final waiver. Warranty tickets for 2-204 attach to the unit for the warranty term, and their cost is charged to the warranty reserve.
 
 ## 7. What posts to the GL
 
@@ -484,10 +522,12 @@ Unit 2-204, type B1-M (mirrored B1), Building 2:
 | Duty adjusted when the customs entry liquidates | Job cost: freight and duty (or duty variance if it can't be traced) | AP (reverse the sides for a refund) |
 | Vendor claim or bill credit | AP (or vendor claims receivable until credited) | Inventory or job cost, wherever the original cost sits |
 | Components issued to a work order (cartons, slabs, blanks, precut tops for prep) | Production WIP | Inventory |
+| Shop overhead applied to a work order (rate based on normal capacity) | Production WIP | Overhead applied |
 | Work order completed | Inventory (finished) | Production WIP |
 | Remnant returned to stock (from a nest, or a rejected precut piece kept as a remnant) | Inventory (remnant) | Production WIP, or job cost: material |
 | Delivery to site (issue to job) | Job cost: material (project, cost code) | Inventory |
 | Precut piece trucked back to stock after a failed fit | Inventory | Job cost: material |
+| Inventory written down to net realizable value (obsolete precut revisions, damaged pieces, remnants) | Cost of revenue: inventory write-down | Inventory |
 | Payroll imported | Labor clearing (office payroll straight to expense) | Cash, payroll liabilities |
 | Employee time distributed, burdened (field time to jobs, work order time to production, the rest to overhead) | Job cost: labor, production WIP, or overhead | Labor clearing |
 | Sub pay app approved | Job cost: subcontract | AP, AP retainage |
@@ -496,22 +536,29 @@ Unit 2-204, type B1-M (mirrored B1), Building 2:
 | Month-end accrual of completed, unbilled sub work (reverses next period) | Job cost: subcontract | Accrued subcontract cost |
 | Use tax on purchases | Inventory or job cost | Use tax payable |
 | Pay app approved (including any stored materials) | AR, AR retainage | Contract revenue |
-| GC backcharge accepted (pay app deduction, credit memo, or retainage at final) | Job cost: backcharges (or contract revenue, if it is really a price reduction; per CPA) | AR (or AR retainage, when taken from retainage) |
+| GC backcharge accepted (pay app deduction, credit memo, or retainage at final) | Contract revenue (a price reduction), or job cost: backcharges if the GC supplied a distinct service such as cleanup | AR (or AR retainage, when taken from retainage) |
 | Retainage release invoiced to the customer | AR | AR retainage |
 | Customer payment | Cash | AR or AR retainage |
 | Month-end WIP, job overbilled (reverses next period) | Contract revenue | Contract liability |
 | Month-end WIP, job underbilled (reverses next period) | Contract asset | Contract revenue |
+| Provision for an expected contract loss (adjusted monthly) | Cost of revenue: provision for losses | Accrued loss on contracts |
+| Warranty accrued as revenue is earned | Cost of revenue: warranty | Warranty reserve |
+| Warranty work performed | Warranty reserve | Inventory, labor clearing or AP |
+| Commission on a won contract (if any) | Capitalized contract costs | Accrued commissions or cash |
+| Capitalized contract costs amortized as the job progresses | Selling expense | Capitalized contract costs |
+| Lease starts | Right-of-use asset | Lease liability |
+| Monthly lease entries (from the lease schedule) | Lease cost (or interest and amortization for a finance lease), lease liability | Cash, right-of-use asset |
 | Depreciation | Depreciation expense | Accumulated depreciation |
 
 Notes:
 
-- **Labor clearing.** Time not on a job or work order is distributed to overhead. Whatever remains in labor clearing after distribution is the burden variance, which is reviewed monthly.
+- **Labor clearing.** Time not on a job or work order is distributed to overhead. At month end, wages earned but not yet paid are presented as accrued payroll. Whatever remains after that is the burden variance, which is reviewed monthly.
+- **Shop overhead.** Overhead is applied to work orders at a rate based on normal capacity. Overhead not absorbed because volume was low is expensed in the period, not added to inventory.
 - **WIP reversal.** The WIP entries reverse on the first day of the next period, so contract asset and contract liability always equal the latest snapshot. Posting only the month's change instead works too.
 - **Sub accrual.** The accrual is what a draft sub pay app would propose at period end, on every basis: verified install order lines, hauled deliveries and go-backs, approved sub time entries, and the unbilled increase in suggested % on lump sums. It keeps cost-to-cost % complete current when subs bill late.
 - **Precut tops.** They skip production WIP unless they need shop prep, and post from inventory to job cost at delivery. A rejected precut piece that goes straight to another unit on site posts nothing; only its unit link changes. A piece trucked back to the warehouse posts the return.
 - **Duty liquidation.** Liquidation usually comes after the goods are installed, so the adjustment goes to job cost, not inventory. This applies to cabinets and stone alike.
 - **Remnants.** A remnant is valued either at a share of the slab or blank cost by usable SF, or at zero. Pick one policy with your CPA.
-- **Foreign currency.** If an import PO is in a foreign currency, bill match and payment post the realized difference to FX gain/loss.
 - **Stored materials.** Billing stored materials moves no stock and posts no cost. Off-site stored stock stays in inventory, so the month-end WIP entry moves that billing to contract liability until the items are delivered to site.
 
 ## 8. Reports the structure answers
@@ -519,8 +566,11 @@ Notes:
 | Report | Built from |
 |---|---|
 | Pipeline, bid calendar, hit rate by GC | bid, project, activity |
-| Backlog (contracted, not yet earned) | contract, change_order, wip_snapshot |
-| WIP schedule and profit fade, with stored materials shown separately | wip_snapshot by period |
+| Backlog (remaining performance obligations, a GAAP disclosure) | contract, change_order, change_event, wip_snapshot |
+| WIP schedule and profit fade, with stored materials, uninstalled materials and loss provisions shown separately | wip_snapshot by period |
+| Revenue by division, customer type and source (GAAP disaggregation) | journal_line dimensions, contract, party_role |
+| Inventory below cost (obsolete precut revisions, damaged, slow-moving, remnants) | lot, serial, inventory_txn, cost_layer |
+| Lease schedules and maturities | lease |
 | Job cost vs budget, cost to complete | job_budget, commitment, journal_line |
 | Unit status board by building and floor (only the milestones each unit's sources need) | unit_milestone |
 | Container tracker (ETA, last free day, demurrage risk), with precut ETA compared to cabinets-installed dates by building | shipment, po_line, unit_milestone |
@@ -543,7 +593,7 @@ Notes:
 1. **Foundation, parties, project and unit matrix (including countertop design pieces), items.** Everything else depends on these.
 2. **CRM and estimating.** This is the biggest gap today and carries no accounting risk. It also creates the scope data every later module reuses.
 3. **Operations: purchasing and imports (cabinets, precut tops, blanks, domestic slabs), inventory, production, field (templates, install order lines, subcontract lines, employee and sub time entries with the work classification field).** INNERGY is replaced at this stage.
-4. **Finance subledgers: AR pay apps with stored materials, AP with sub pay apps, job cost.** These feed NetSuite with summarized journals while both systems run in parallel. Stored materials depend on the reservations, work orders and deliveries built in step 3.
+4. **Finance subledgers: AR pay apps with stored materials, AP with sub pay apps, job cost.** These feed NetSuite with summarized journals while both systems run in parallel. Stored materials depend on the reservations, work orders and deliveries built in step 3. Run the GAAP WIP calculation side by side with your CPA's schedule for at least one quarter end before relying on it.
 5. **GL cutover from NetSuite last,** at a fiscal year start, after at least one quarter of parallel running. Payroll processing stays with a provider for good.
 
 Prevailing wage (`wage_determination` and the `certified_payroll` workflow) is built when the first prevailing wage bid arrives, not at award. The estimate needs the rates, and the first week of work needs certified payroll from us and from each sub.
@@ -558,6 +608,9 @@ Rationale: the GL is the riskiest and least distinctive piece, and NetSuite alre
 - Stored materials are billable on some contracts, not all.
 - No prevailing wage jobs today, but they're possible.
 - Install subs can be paid per unit, per cabinet box, per LF or SF, or lump sum per building.
+- Precut suppliers label pieces by unit type, so precut tops are lot-tracked per design piece and interchangeable among units of that type until delivered.
+- All purchases, imports included, are in US dollars.
+- Revenue and costs follow GAAP.
 
 **Assumptions made in this draft (change any of them):**
 
@@ -565,10 +618,12 @@ Rationale: the GL is the riskiest and least distinctive piece, and NetSuite alre
 - Customers are mostly GCs, billed by AIA-style pay apps with retainage.
 - Templates are taken in the field after cabinets are installed.
 - Subs can also be paid per hour and per trip, and one subcontract can mix bases.
-- Revenue is recognized over time using cost-to-cost, with a monthly WIP schedule. Confirm with your CPA and your bonding company's format.
+- Each contract is one performance obligation satisfied over time, with progress measured by cost-to-cost and a monthly WIP schedule. That is the usual GAAP treatment for this work. Confirm with your CPA and your bonding company's format.
+- Uninstalled-materials treatment applies to goods we buy finished (domestic cabinets, precut tops), not to goods we make (cabinets we assemble, tops we fabricate).
+- Warranties are our standard assurance warranty. No extended warranties are sold separately.
 - Material cost hits the job when it is delivered to site. Until then it is inventory reserved to the job, so it doesn't inflate % complete. This holds even when the GC has paid for it as stored materials: the billing sits in overbillings, not cost.
 - Stored materials are valued at landed cost, backed by vendor invoices and landed cost charges, unless the contract says otherwise. Our warehouse is approved storage only where a contract lists it.
-- Precut tops are ordered per building (planned release) against approved design pieces, not for the whole project in one order. They're interchangeable among units of the same type until delivered.
+- Precut tops are ordered per building (planned release) against approved design pieces, not for the whole project in one order.
 - Blanks are lot-tracked. Slabs are serialized.
 - The ERP drafts each sub pay app from verified completed work. The sub accepts it, or the sub's own invoice is matched to it.
 - Duty and wage rates are data with effective dates, never hard-coded.
@@ -580,28 +635,29 @@ Rationale: the GL is the riskiest and least distinctive piece, and NetSuite alre
 
 *Countertops*
 
-1. Do precut suppliers pack and label pieces by unit number, or only by unit type? The draft assumes by unit type. Packing by unit would mean serializing each precut piece to its unit at receipt.
-2. Will you check installed cabinets against the drawing before delivering precut tops? If yes, should a failed check block the delivery?
-3. Are precut tops ordered per building as the draft assumes, or for the whole project at award?
+1. Will you check installed cabinets against the drawing before delivering precut tops? If yes, should a failed check block the delivery?
+2. Are precut tops ordered per building as the draft assumes, or for the whole project at award?
 
 *Billing and accounting (several are for your CPA)*
 
-4. Does any contract let you bill materials still in transit or at the supplier, such as a container on the water or slabs held at a domestic yard?
-5. Does the bill of sale pass title to the owner or GC? If so, should stock billed as stored sit in a separate inventory account?
-6. For materials delivered but not yet installed, does your CPA want revenue limited to cost (the ASC 606 uninstalled-materials guidance)? If yes, the WIP snapshot needs an adjustment field.
-7. Are remnants carried at a share of cost or at zero?
-8. Are import POs priced in US dollars or the supplier's currency?
+3. Does any contract let you bill materials still in transit or at the supplier, such as a container on the water or slabs held at a domestic yard?
+4. Does the bill of sale pass title to the owner or GC? Under GAAP that bears on whether the customer controls the stock, and so whether it is still our inventory.
+5. Which materials does your CPA treat as eligible for the uninstalled-materials rule? The draft assumes goods we buy finished, not goods we make.
+6. Are remnants carried at a share of cost or at zero? Either way they're tested against net realizable value.
+7. Do you pay sales commissions or bonuses tied to winning contracts? If yes, they're capitalized and amortized over the job.
+8. Which buildings, trucks and equipment do you lease? Each becomes a `lease` record.
+9. Are your financial statements audited, reviewed or compiled? That decides how much disclosure reporting (remaining performance obligations, revenue breakdowns) you need from day one.
 
 *Subs and payroll*
 
-9. Do any subcontracts pay the sub only after the GC pays us (pay-when-paid)? If yes, sub pay app lines need a link to the customer payment.
-10. Do sub rate cards carry across projects as master agreements, or is every project negotiated?
-11. When you pay per LF, is it the sum of box widths or LF scope lines (both modeled), or the wall run measured on plan (which would add an LF field to each area)?
-12. Do your own W-2 crews get piece pay on the same bases (per box, per unit, per SF)?
-13. Which payroll provider do you use, and can it produce certified payroll reports?
+10. Do any subcontracts pay the sub only after the GC pays us (pay-when-paid)? If yes, sub pay app lines need a link to the customer payment.
+11. Do sub rate cards carry across projects as master agreements, or is every project negotiated?
+12. When you pay per LF, is it the sum of box widths or LF scope lines (both modeled), or the wall run measured on plan (which would add an LF field to each area)?
+13. Do your own W-2 crews get piece pay on the same bases (per box, per unit, per SF)?
+14. Which payroll provider do you use, and can it produce certified payroll reports?
 
 *Company*
 
-14. Do you ever sell material only, with no install (to other contractors, or slab and blank remnants to the public)? That adds a simple sales order flow.
-15. How many warehouse and shop locations?
-16. Will you need more than one legal entity, for example a separate importing company?
+15. Do you ever sell material only, with no install (to other contractors, or slab and blank remnants to the public)? That adds a simple sales order flow.
+16. How many warehouse and shop locations?
+17. Will you need more than one legal entity, for example a separate importing company?
