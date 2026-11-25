@@ -139,6 +139,7 @@ const fmt = c => (c || 0) < 0 ? `(${USD.format(-c / 100)})` : USD.format((c || 0
 const fmtB = c => c ? fmt(c) : '';                       // blank when zero
 const fmtN = c => `<span class="${c < 0 ? 'neg' : ''}">${fmt(c)}</span>`;
 const plain = c => (c / 100).toFixed(2);
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 function parseMoney(s) {
   s = String(s ?? '').trim();
@@ -262,14 +263,171 @@ function load() {
 }
 function save(changed = true) {
   if (changed) db.settings.lastChange = Date.now();
+  saveLocal();
+  if (FS.connected) scheduleFileWrite();
+}
+function saveLocal() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
   catch (e) { alert('Could not save to browser storage: ' + e.message + '\nDownload a backup now from Settings & Backup.'); }
   showSaved();
 }
 function showSaved() {
-  const n = db.entries.length;
-  $('#saved').textContent = `${n} entr${n === 1 ? 'y' : 'ies'} · saved in this browser`;
+  const n = db.entries.length, cnt = `${n} entr${n === 1 ? 'y' : 'ies'}`;
+  let txt = `${cnt} · saved in this browser only`;
+  if (FS.connected) txt = `${cnt} · ${FS.state === 'saving' ? 'saving…' : FS.state === 'error' ? '⚠ could not save to' : 'saved to'} ${FS.name}`;
+  else if (FS.handle) txt = `${cnt} · ⚠ not connected to ${FS.name}`;
+  $('#saved').textContent = txt;
 }
+function normalizeDb(d) {
+  if (!d || !Array.isArray(d.accounts) || !Array.isArray(d.entries) || !d.settings) throw new Error('This is not a Shop Books file.');
+  d.recons ||= []; d.items ||= []; d.counts ||= []; d.nextNo ||= Math.max(0, ...d.entries.map(e => e.no || 0)) + 1;
+  d.settings.roles = {...seed().settings.roles, ...(d.settings.roles || {})};
+  return d;
+}
+
+/* ------------------- Books file (e.g. in a OneDrive folder) --------------
+   Chrome/Edge only (File System Access API). The linked file is the source
+   of truth; localStorage is a cache. Each write bumps a revision number in
+   the file. Before writing we re-read the file: if its revision isn't the
+   one we last loaded, another computer changed it, so we stop and ask.
+   ------------------------------------------------------------------------ */
+const FS = {supported: typeof window.showSaveFilePicker === 'function', handle: null, name: '', connected: false,
+  knownRev: null, fileId: null, timer: null, busy: false, again: false, state: ''};
+const kv = {
+  open: () => new Promise((res, rej) => { const r = indexedDB.open('shopbooks', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }),
+  async run(mode, fn) { const d = await this.open(); return new Promise((res, rej) => { const q = fn(d.transaction('kv', mode).objectStore('kv')); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); },
+  get(k) { return this.run('readonly', s => s.get(k)); },
+  set(k, v) { return this.run('readwrite', s => s.put(v, k)); },
+  del(k) { return this.run('readwrite', s => s.delete(k)); },
+};
+const unsynced = () => !!db.settings.lastChange && db.settings.lastChange > (db.syncedAt || 0);
+async function readBooksFile() {
+  const f = await FS.handle.getFile(), t = await f.text();
+  if (!t.trim()) return null;
+  let d; try { d = JSON.parse(t); } catch (e) { throw new Error(`${f.name} is not a Shop Books file.`); }
+  return normalizeDb(d);
+}
+function adoptFile(d) {
+  db = d; FS.knownRev = d.rev || 0; FS.fileId = d.fileId || FS.fileId || uid();
+  db.syncedAt = Date.now(); saveLocal(); render();
+}
+function setFileState(s) { FS.state = s; showSaved(); }
+function scheduleFileWrite() {
+  clearTimeout(FS.timer); setFileState('saving');
+  FS.timer = setTimeout(() => { FS.timer = null; writeBooksFile(); }, 400);
+}
+async function writeBooksFile({force = false} = {}) {
+  if (!FS.connected) return;
+  if (FS.busy) { FS.again = true; return; }
+  FS.busy = true;
+  try {
+    let cur = null;
+    try { cur = await readBooksFile(); } catch (e) { if (e.name === 'NotAllowedError' || e.name === 'NotFoundError') throw e; }
+    if (!force && cur && (cur.rev || 0) !== FS.knownRev) { setFileState('error'); showConflict(cur); return; }
+    const rev = Math.max(cur?.rev || 0, FS.knownRev || 0) + 1;
+    db.rev = rev; db.fileId = FS.fileId; db.savedAt = Date.now(); db.syncedAt = db.savedAt;
+    const w = await FS.handle.createWritable();
+    await w.write(JSON.stringify(db)); await w.close();
+    FS.knownRev = rev; saveLocal(); setFileState('saved');
+  } catch (e) {
+    setFileState('error');
+    if (e.name === 'NotAllowedError' || e.name === 'NotFoundError') { FS.connected = false; renderBanner(); showSaved(); }
+    toast(e.name === 'NotFoundError' ? `Can't find ${FS.name}. It may have been moved or renamed. Reconnect it in Settings & Backup.` : `Could not save to ${FS.name}: ${e.message}`);
+  } finally {
+    FS.busy = false;
+    if (FS.again) { FS.again = false; writeBooksFile(); }
+  }
+}
+async function connectBooksFile(handle, {ask = false, isNew = false} = {}) {
+  if (ask && handle.requestPermission) {
+    let p = 'granted';
+    try { p = await handle.requestPermission({mode: 'readwrite'}); } catch (e) { /* no user gesture left; the browser will ask on first save */ }
+    if (p === 'denied') throw new Error('Permission to edit the file was not given.');
+  }
+  FS.handle = handle; FS.name = handle.name; FS.connected = true;
+  try { await kv.set('fileHandle', handle); } catch (e) { console.warn(e); }
+  if (isNew) { FS.fileId = uid(); FS.knownRev = null; db.settings.demo = false; await writeBooksFile({force: true}); render(); return; }
+  const d = await readBooksFile();
+  if (!d) { FS.fileId = uid(); await writeBooksFile({force: true}); render(); return; }
+  if (d.fileId && d.fileId === db.fileId && (d.rev || 0) === (db.rev || 0)) {   // same file, same version
+    FS.knownRev = d.rev || 0; FS.fileId = d.fileId;
+    if (unsynced()) await writeBooksFile(); else adoptFile(d);
+  } else if (unsynced() && db.entries.length) { FS.knownRev = null; FS.fileId = d.fileId || uid(); showConflict(d); }
+  else adoptFile(d);
+  setFileState('saved'); renderBanner();
+}
+async function disconnectBooksFile() {
+  clearTimeout(FS.timer); FS.timer = null;
+  Object.assign(FS, {handle: null, name: '', connected: false, knownRev: null, fileId: null, state: ''});
+  try { await kv.del('fileHandle'); } catch (e) {}
+  renderBanner(); showSaved();
+}
+async function pickNewBooksFile() {
+  try {
+    const h = await window.showSaveFilePicker({suggestedName: `${slug()}-books.json`, types: [{description: 'Shop Books file', accept: {'application/json': ['.json']}}]});
+    await connectBooksFile(h, {isNew: true}); toast(`Your books are now saved in ${h.name}`);
+  } catch (e) { if (e.name !== 'AbortError') alert('Could not create the file: ' + e.message); }
+}
+async function pickExistingBooksFile() {
+  try {
+    const [h] = await window.showOpenFilePicker({types: [{description: 'Shop Books file', accept: {'application/json': ['.json']}}]});
+    await connectBooksFile(h, {ask: true}); toast(`Opened ${h.name}`);
+  } catch (e) { if (e.name !== 'AbortError') alert('Could not open the file: ' + e.message); }
+}
+function showConflict(fileData) {
+  if (dlg.open && $('#cfFile', dlg)) return;
+  const when = fileData.savedAt ? new Date(fileData.savedAt).toLocaleString() : 'unknown time';
+  openDialog(`<div class="dhead"><h2>Your books file was changed on another computer</h2></div>
+  <div class="dbody"><p><b>${esc(FS.name)}</b> was last saved at ${esc(when)} and has ${plural(fileData.entries.length, 'entry', 'entries')}.
+  This computer has ${plural(db.entries.length, 'entry', 'entries')}, including changes that are not in that file.</p>
+  <p>This usually happens when the books were open on both computers, or when OneDrive hadn't finished syncing before you started. Pick which version to keep. To be safe, download this computer's version first so nothing is lost.</p></div>
+  <div class="dfoot"><button class="btn" id="cfDl" style="margin-right:auto">Download this computer's version</button>
+  <button class="btn" id="cfMine">Keep this computer's version</button><button class="btn primary" id="cfFile">Use the file's version</button></div>`, () => {
+    $('#cfDl').onclick = () => download(`${slug()}-books-this-computer-${today()}.json`, JSON.stringify(db, null, 1), 'application/json');
+    $('#cfFile').onclick = () => { closeDialog(); adoptFile(fileData); setFileState('saved'); toast('Loaded the version from the books file'); };
+    $('#cfMine').onclick = async () => {
+      if (!confirm(`Overwrite ${FS.name} with this computer's version? The other computer's changes will be replaced. (OneDrive's version history can still bring them back.)`)) return;
+      closeDialog(); await writeBooksFile({force: true}); toast(`Saved this computer's version to ${FS.name}`);
+    };
+  });
+}
+async function checkFileForUpdates() {
+  if (!FS.connected || FS.timer || FS.busy || document.visibilityState !== 'visible') return;
+  try {
+    const d = await readBooksFile();
+    if (!d || (d.rev || 0) === FS.knownRev) return;
+    if (unsynced()) showConflict(d);
+    else { adoptFile(d); setFileState('saved'); toast(`Loaded the latest books from ${FS.name}`); }
+  } catch (e) { /* file briefly unavailable while OneDrive syncs; try again later */ }
+}
+document.addEventListener('visibilitychange', checkFileForUpdates);
+setInterval(checkFileForUpdates, 30000);
+window.addEventListener('beforeunload', e => { if (FS.timer || FS.busy) { e.preventDefault(); e.returnValue = ''; } });
+async function initBooksFile() {
+  // Escape must not dismiss the conflict / reconnect questions without an answer.
+  dlg.addEventListener('cancel', e => { if ($('#cfFile', dlg) || $('#rcOpen', dlg)) e.preventDefault(); });
+  if (!FS.supported) return;
+  let h; try { h = await kv.get('fileHandle'); } catch (e) {}
+  if (!h) return;
+  FS.handle = h; FS.name = h.name;
+  let perm = 'prompt'; try { perm = await h.queryPermission({mode: 'readwrite'}); } catch (e) {}
+  if (perm === 'granted') { try { await connectBooksFile(h); return; } catch (e) { toast(`Could not open ${h.name}: ${e.message}`); } }
+  showSaved(); renderBanner(); showReconnect();
+}
+function showReconnect() {
+  openDialog(`<div class="dhead"><h2>Open your books</h2></div>
+  <div class="dbody"><p>Your books are kept in <b>${esc(FS.name)}</b>, for example in your OneDrive folder. Your browser asks for your OK to open it each time you start.</p>
+  <p class="err" id="rcErr"></p></div>
+  <div class="dfoot"><button class="btn" id="rcLater" style="margin-right:auto">Not now</button><button class="btn" id="rcOther">Pick a different file…</button><button class="btn primary" id="rcOpen">Open ${esc(FS.name)}</button></div>`, () => {
+    $('#rcOpen').onclick = async () => {
+      try { const h = FS.handle; closeDialog(); await connectBooksFile(h, {ask: true}); toast(`Opened ${h.name}`); }
+      catch (e) { showReconnect(); $('#rcErr').textContent = e.name === 'NotFoundError' ? `Can't find ${FS.name}. It may have been moved or renamed. Use "Pick a different file".` : e.message; }
+    };
+    $('#rcOther').onclick = () => { closeDialog(); pickExistingBooksFile(); };
+    $('#rcLater').onclick = () => { closeDialog(); renderBanner(); };
+  });
+}
+
 db = load() || seed();
 try { navigator.storage?.persist?.(); } catch (e) {}
 window.addEventListener('storage', e => {
@@ -411,6 +569,8 @@ function renderBanner() {
   const s = db.settings, b = $('#banner');
   let msg = '';
   if (s.demo) msg = `<b>Sample data is loaded.</b> Look around, then erase it in Settings & Backup before you enter real books.`;
+  else if (FS.handle && !FS.connected) msg = `<b>Not connected to your books file (${esc(FS.name)}).</b> Changes you make now are saved only in this browser. <button class="btn sm" id="rcNow">Open books file</button>`;
+  else if (FS.connected) msg = '';
   else if (db.entries.length && s.lastChange && (!s.lastBackup || s.lastChange > s.lastBackup)) {
     const days = s.lastBackup ? Math.floor((Date.now() - s.lastBackup) / 864e5) : null;
     if (days === null || days >= 7)
@@ -418,6 +578,7 @@ function renderBanner() {
   }
   b.innerHTML = msg ? `<div>${msg}</div>` : '';
   $('#bkNow')?.addEventListener('click', downloadBackup);
+  $('#rcNow')?.addEventListener('click', showReconnect);
 }
 
 /* ------------------------------- Dashboard ------------------------------ */
@@ -434,8 +595,11 @@ function vDash(el) {
       <li><b>Record</b>: use the quick forms (daily sales, card payout, supplier purchase, and so on). They post the debits and credits for you.</li>
       <li>Each month: <b>Inventory</b> count, then <b>Reconcile</b> the bank, then check the <b>Reports</b>. Download a backup.</li>
     </ol>
-    <div class="row"><button class="btn primary" id="goRecord">Record your first transaction</button><button class="btn" id="demo">Explore with sample data</button></div></div>`;
+    <div class="row"><button class="btn primary" id="goRecord">Record your first transaction</button><button class="btn" id="demo">Explore with sample data</button></div></div>
+    ${FS.supported && !FS.handle ? `<div class="panel"><h3 style="margin-top:0">Already keep your books in OneDrive?</h3><p>On a second computer, open the books file you created on the first one. Both computers then share the same books.</p>
+      <button class="btn primary" id="openBooks">Open books file…</button></div>` : ''}`;
     $('#goRecord').onclick = () => go('record');
+    $('#openBooks')?.addEventListener('click', pickExistingBooksFile);
     $('#demo').onclick = () => { if (confirm('Load sample chocolate shop data? You can erase it later in Settings & Backup.')) { loadDemo(); render(); } };
     return;
   }
@@ -1142,9 +1306,26 @@ function accountEditor(a, el) {
 /* -------------------------------- Settings ------------------------------ */
 function vSettings(el) {
   const s = db.settings;
+  const fileTime = db.savedAt ? new Date(db.savedAt).toLocaleString() : '';
+  const filePanel = !FS.supported
+    ? `<p>Your browser can't save directly to a file. Use <b>Chrome</b> or <b>Edge</b> to keep your books in a OneDrive file shared by your computers.</p>
+       <p class="muted small">Until then: download a backup into your OneDrive folder, and use <i>Restore from backup</i> on the other computer.</p>`
+    : FS.connected
+    ? `<p class="ok">✓ Your books are saved in <b>${esc(FS.name)}</b>.</p><p class="muted small">Last saved ${esc(fileTime)}. Every change is written to this file. OneDrive syncs it to your other computer and keeps its version history.</p>
+       <div class="row"><button class="btn" id="fOther">Switch to a different file…</button><button class="btn danger" id="fOff">Disconnect</button></div>`
+    : FS.handle
+    ? `<p class="err">Not connected to ${esc(FS.name)}. Changes are saved only in this browser.</p><div class="row"><button class="btn primary" id="fRe">Open ${esc(FS.name)}</button><button class="btn" id="fOther">Pick a different file…</button><button class="btn" id="fOff">Forget this file</button></div>`
+    : `<p>Keep your books in a file in your <b>OneDrive</b> folder so all your computers share them. The file is saved automatically after every change.</p>
+       <ol class="small"><li><b>On the computer that has your books now:</b> click <i>Create books file</i> and save it inside your OneDrive folder.</li>
+       <li><b>On the other computer:</b> open Shop Books in Chrome or Edge, click <i>Open existing books file</i>, and pick that same file in OneDrive.</li>
+       <li>Each time you start, the browser asks once for permission to open the file. Click <i>Allow</i>, or <i>Allow on every visit</i> if it's offered.</li></ol>
+       <p class="small muted">Use the books on one computer at a time, and give OneDrive a moment to sync before switching. If both computers change the books, Shop Books warns you instead of overwriting.</p>
+       <div class="row"><button class="btn primary" id="fNew">Create books file…</button><button class="btn" id="fOpen">Open existing books file…</button></div>`;
   el.innerHTML = `<h1>Settings & Backup</h1>
+  <div class="panel"><h2 style="margin-top:0">Books file (OneDrive)</h2>${filePanel}</div>
   <div class="panel"><h2 style="margin-top:0">Backup</h2>
-    <p>Your books are stored <b>only in this browser on this computer</b>. Clearing browsing data, or opening this file in a different browser, will not show them. <b>Download a backup at least once a week</b> and keep copies somewhere safe, such as a USB drive or cloud folder.</p>
+    ${FS.connected ? `<p>Your books file is in OneDrive, and OneDrive keeps earlier versions of it. An occasional extra backup kept somewhere else, such as a USB drive, is still a good idea.</p>`
+    : `<p>Your books are stored <b>only in this browser on this computer</b>. Clearing browsing data, or opening this file in a different browser, will not show them. <b>Download a backup at least once a week</b> and keep copies somewhere safe, such as a USB drive or cloud folder.</p>`}
     <p class="muted small">Last backup: ${s.lastBackup ? new Date(s.lastBackup).toLocaleString() : 'never'}</p>
     <div class="row"><button class="btn primary" id="bk">Download backup</button><button class="btn" id="rs">Restore from backup…</button><button class="btn" id="csv">Export journal to CSV</button></div></div>
   <div class="panel"><h2 style="margin-top:0">Shop</h2><div class="form">
@@ -1158,18 +1339,29 @@ function vSettings(el) {
     <button class="btn" id="ob">Enter opening balances…</button></div>
   <div class="panel"><h2 style="margin-top:0">Start over</h2><p class="muted small">Erase everything in this browser. Download a backup first if you might want it.</p>
     <div class="row"><button class="btn danger" id="erase">Erase all data</button><button class="btn" id="demo">Load sample data</button></div></div>`;
+  $('#fNew')?.addEventListener('click', pickNewBooksFile);
+  $('#fOpen')?.addEventListener('click', pickExistingBooksFile);
+  $('#fOther')?.addEventListener('click', pickExistingBooksFile);
+  $('#fRe')?.addEventListener('click', showReconnect);
+  $('#fOff')?.addEventListener('click', async () => {
+    if (!confirm(`Stop saving to ${FS.name}? The file stays in OneDrive. This computer keeps a copy in the browser.`)) return;
+    await disconnectBooksFile(); render(); toast('Disconnected from books file');
+  });
   $('#bk').onclick = downloadBackup;
   $('#rs').onclick = () => $('#restoreFile').click();
   $('#csv').onclick = exportCSV;
   $('#sSave').onclick = () => { s.shopName = $('#sN').value.trim(); s.fyStartMonth = +$('#sF').value; s.lockDate = $('#sL').value; save(); render(); toast('Settings saved'); };
   $$('[data-role]', el).forEach(sel => sel.onchange = () => { s.roles[sel.dataset.role] = sel.value; save(); toast('Default account updated'); });
   $('#ob').onclick = openingBalances;
-  $('#erase').onclick = () => {
-    if (!confirm('Erase ALL books in this browser? This cannot be undone.')) return;
+  $('#erase').onclick = async () => {
+    if (!confirm(`Erase ALL books in this browser? This cannot be undone.${FS.handle ? `\n\nThis also disconnects ${FS.name}. The file itself stays in OneDrive.` : ''}`)) return;
     if (prompt('Type ERASE to confirm') !== 'ERASE') return;
-    db = seed(); save(); go('dash'); toast('All data erased');
+    await disconnectBooksFile(); db = seed(); save(); go('dash'); toast('All data erased');
   };
-  $('#demo').onclick = () => { if ((!db.entries.length || confirm('This replaces everything in this browser with sample data. Continue?'))) { loadDemo(); go('dash'); } };
+  $('#demo').onclick = async () => {
+    if (db.entries.length && !confirm(`This replaces everything in this browser with sample data.${FS.handle ? ` It also disconnects ${FS.name}, so the sample data never goes into your real books file.` : ''} Continue?`)) return;
+    await disconnectBooksFile(); loadDemo(); go('dash');
+  };
 }
 function openingBalances() {
   const list = sortedAccounts(a => ['asset', 'liability'].includes(tOf(a)) && a.active);
@@ -1220,12 +1412,9 @@ $('#restoreFile').onchange = ev => {
   const rd = new FileReader();
   rd.onload = () => {
     try {
-      const d = JSON.parse(rd.result);
-      if (!d || !Array.isArray(d.accounts) || !Array.isArray(d.entries) || !d.settings) throw new Error('This file is not a Shop Books backup.');
-      if (!confirm(`Restore this backup (${d.entries.length} entries${d.settings.shopName ? ' for ' + d.settings.shopName : ''})? It REPLACES what is in this browser now.`)) return;
-      d.recons ||= []; d.items ||= []; d.counts ||= []; d.nextNo ||= Math.max(0, ...d.entries.map(e => e.no || 0)) + 1;
-      d.settings.roles = {...seed().settings.roles, ...(d.settings.roles || {})};
-      db = d; save(false); go('dash'); toast('Backup restored');
+      const d = normalizeDb(JSON.parse(rd.result));
+      if (!confirm(`Restore this backup (${d.entries.length} entries${d.settings.shopName ? ' for ' + d.settings.shopName : ''})? It REPLACES what is in this browser now${FS.connected ? ` and in ${FS.name}` : ''}.`)) return;
+      db = d; save(); go('dash'); toast('Backup restored');
     } catch (e) { alert('Could not restore: ' + e.message); }
   };
   rd.readAsText(f);
@@ -1240,6 +1429,7 @@ function exportCSV() {
 
 /* ------------------------------- Sample data ---------------------------- */
 function loadDemo() {
+  if (FS.handle) disconnectBooksFile();   // never write sample data into a real books file
   db = seed(); db.settings.demo = true; db.settings.shopName = 'Sample Chocolate Shop';
   let seedN = 42; const rnd = () => { seedN = (seedN * 1664525 + 1013904223) % 4294967296; return seedN / 4294967296; };
   const amt = (lo, hi) => Math.round((lo + rnd() * (hi - lo)) * 100);
@@ -1293,6 +1483,7 @@ function loadDemo() {
 }
 
 render();
+initBooksFile();
 </script>
 </body>
 </html>

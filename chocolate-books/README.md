@@ -32,9 +32,26 @@ A complete double-entry bookkeeping system in **one HTML file** (`index.html`). 
 | Monthly | **Inventory → Take an inventory count** on the last day, **Reconcile** the bank and credit card, review **Reports** |
 | Yearly | Print the P&L and Balance Sheet for your tax preparer, export the CSV, set **Lock books through** to year end |
 
+## Sharing the books between computers with OneDrive (Chrome or Edge)
+
+You can keep your books in a file in your OneDrive folder. Every change is saved to that file automatically, and OneDrive syncs it to your other computer.
+
+1. Put `index.html` in your OneDrive folder too, so both computers open the same app.
+2. **On the computer that has your books now:** open Shop Books in Chrome or Edge. Go to **Settings & Backup → Books file (OneDrive) → Create books file…** and save it inside your OneDrive folder, for example `OneDrive/Shop Books/my-shop-books.json`.
+3. **On the other computer:** open Shop Books in Chrome or Edge, click **Open existing books file…** (on the welcome screen or in Settings) and pick that same file.
+4. Each time you start, the browser asks once for permission to open the file. Click **Allow**, or **Allow on every visit** if it's offered. The header shows `saved to my-shop-books.json` while you're connected.
+
+Good habits:
+
+- Use the books on **one computer at a time**. Before switching, wait for OneDrive to show the file as synced. The OneDrive icon in the taskbar or menu bar shows sync status.
+- If the file changed on the other computer while this one also has unsaved changes, Shop Books **stops and asks** which version to keep. It never silently overwrites. It also offers to download this computer's version first.
+- If a computer is left open, it checks the file every 30 seconds and when you switch back to the tab. It picks up changes made on the other computer automatically.
+- OneDrive keeps version history (right-click the file → **Version history**), which acts as an automatic backup.
+- Loading sample data or erasing everything **disconnects** the file first, so neither can touch your real books file.
+
 ## Important: backups
 
-Your books are saved in **this browser's storage on this computer**. They are not in the HTML file itself. That means:
+Without a linked books file, your books are saved in **this browser's storage on this computer**. They are not in the HTML file itself. That means:
 
 - Clearing browser data, or switching to a different browser or computer, will *not* show your books.
 - **Download a backup at least weekly** (Settings & Backup → Download backup) and keep copies in a second place, such as a USB drive or cloud folder. The app reminds you when a backup is overdue.
