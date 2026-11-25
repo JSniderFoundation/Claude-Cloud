@@ -1,0 +1,1298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shop Books</title>
+<style>
+:root{
+  --bg:#faf7f4;--panel:#ffffff;--ink:#2a1f1a;--muted:#7a6a60;--line:#e6ddd5;
+  --accent:#6b3e26;--accent-ink:#ffffff;--accent-soft:#f3e8df;
+  --good:#2e7d4f;--bad:#b3261e;--warn:#7a5200;--warn-bg:#fff4d6;--row:#fbf8f6;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#1b1512;--panel:#251d19;--ink:#f2ebe6;--muted:#b3a399;--line:#3d3029;
+    --accent:#d9a273;--accent-ink:#1b1512;--accent-soft:#3a2a20;
+    --good:#6fcf97;--bad:#ff8a80;--warn:#f2c45a;--warn-bg:#3a3018;--row:#2a211c;}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+a{color:var(--accent)}
+header{background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top{max-width:1150px;margin:0 auto;padding:10px 16px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:17px;color:var(--accent);margin-right:auto}
+.brand small{color:var(--muted);font-weight:400;font-size:13px;margin-left:6px}
+nav{max-width:1150px;margin:0 auto;padding:6px 12px 0;display:flex;gap:2px;overflow-x:auto;scrollbar-width:thin}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 10px;color:var(--muted);font:inherit;cursor:pointer;white-space:nowrap}
+nav button.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+main{max-width:1150px;margin:0 auto;padding:18px 16px 60px}
+h1{font-size:22px;margin:0 0 4px}
+h2{font-size:18px;margin:22px 0 8px}
+h3{font-size:15px;margin:16px 0 6px}
+p{margin:6px 0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin:12px 0}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.card .lbl{color:var(--muted);font-size:13px}
+.card .val{font-size:22px;font-weight:650;font-variant-numeric:tabular-nums;margin-top:2px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.tile:hover{border-color:var(--accent)}
+.tile b{display:block;margin-bottom:3px}
+.tile span{color:var(--muted);font-size:13px}
+.btn{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:7px 13px;font:inherit;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:3px 9px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field>span{font-size:13px;color:var(--muted)}
+.field small{color:var(--muted);font-size:12px}
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0;max-width:100%}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+input.money{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:13px;color:var(--muted);font-weight:600}
+td.n,th.n{text-align:right;white-space:nowrap}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--row)}
+tr.sec td{font-weight:650;background:var(--accent-soft);border-bottom:0}
+tr.sub td{font-weight:650;border-top:1px solid var(--muted)}
+tr.tot td{font-weight:750;border-top:2px solid var(--ink);border-bottom:3px double var(--ink)}
+td.ind{padding-left:22px}
+.neg{color:var(--bad)}
+.ok{color:var(--good);font-weight:600}
+.err{color:var(--bad);font-weight:600}
+.banner{max-width:1150px;margin:10px auto 0;padding:0 16px}
+.banner>div{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:9px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px}
+.pill{display:inline-block;font-size:12px;padding:1px 7px;border-radius:20px;background:var(--accent-soft);color:var(--ink)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.tabs .btn.on{background:var(--accent-soft);border-color:var(--accent);font-weight:600}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:0;width:min(920px,calc(100vw - 24px));max-height:calc(100vh - 40px)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog .dhead{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+dialog .dhead h2{margin:0;margin-right:auto}
+dialog .dbody{padding:14px 16px}
+dialog .dfoot{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;display:none;gap:12px;align-items:center;z-index:50;max-width:calc(100vw - 32px)}
+#toast button{background:none;border:1px solid var(--bg);color:var(--bg);border-radius:5px;padding:2px 8px;cursor:pointer;font:inherit}
+.lines td{padding:4px}
+.lines select{width:100%;min-width:180px}
+.lines input{width:100%}
+.lines input.money{min-width:90px}
+.help{background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:14px}
+.help p:first-child{margin-top:0}.help p:last-child{margin-bottom:0}
+.right{margin-left:auto}
+.print-only{display:none}
+@media (max-width:600px){ .card .val{font-size:19px} td,th{padding:5px 6px} }
+@media print{
+  header,.banner,.noprint,.btn,nav,#toast{display:none!important}
+  body{background:#fff;color:#000;font-size:12px}
+  main{padding:0;max-width:none}
+  .panel{border:0;padding:0}
+  .print-only{display:block}
+  tr.sec td{background:#eee}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><div class="brand" id="brand">Shop Books</div><span class="muted small noprint" id="saved"></span></div>
+  <nav id="nav"></nav>
+</header>
+<div class="banner" id="banner"></div>
+<main id="view"></main>
+<dialog id="dlg"></dialog>
+<div id="toast"></div>
+<input type="file" id="restoreFile" accept=".json,application/json" hidden>
+
+<script>
+'use strict';
+/* =========================================================================
+   Shop Books: a free, offline double-entry bookkeeping system.
+   All amounts are stored as integer cents. Data lives in this browser's
+   localStorage. Use Settings & Backup to download backup files.
+   ========================================================================= */
+
+const STORE_KEY = 'shopbooks.v1';
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const pad = n => String(n).padStart(2, '0');
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const addDays = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const addYears = (s, n) => `${+s.slice(0, 4) + n}${s.slice(4)}`;
+const monthEnd = (y, m) => new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10); // m is 1-12
+const dow = s => new Date(s + 'T00:00:00Z').getUTCDay();
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtDate = s => s ? `${MONTHS[+s.slice(5, 7) - 1]} ${+s.slice(8, 10)}, ${s.slice(0, 4)}` : '';
+const USD = new Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD'});
+const fmt = c => (c || 0) < 0 ? `(${USD.format(-c / 100)})` : USD.format((c || 0) / 100);
+const fmtB = c => c ? fmt(c) : '';                       // blank when zero
+const fmtN = c => `<span class="${c < 0 ? 'neg' : ''}">${fmt(c)}</span>`;
+const plain = c => (c / 100).toFixed(2);
+
+function parseMoney(s) {
+  s = String(s ?? '').trim();
+  if (!s) return 0;
+  let neg = false;
+  if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); }
+  s = s.replace(/[$,\s]/g, '');
+  if (s.startsWith('-')) { neg = !neg; s = s.slice(1); }
+  if (!/^(\d+(\.\d{0,2})?|\.\d{1,2})$/.test(s)) return NaN;
+  const [w, f = ''] = s.split('.');
+  const c = parseInt(w || '0', 10) * 100 + parseInt((f + '00').slice(0, 2), 10);
+  return neg ? -c : c;
+}
+
+/* ---------------------------- Chart of accounts ------------------------- */
+const TYPES = ['asset', 'liability', 'equity', 'income', 'expense'];
+const TYPE_LABEL = {asset: 'Assets', liability: 'Liabilities', equity: 'Equity', income: 'Income', expense: 'Cost of sales & expenses'};
+const SUBS = {
+  bank: {type: 'asset', label: 'Bank account'},
+  cash: {type: 'asset', label: 'Cash on hand'},
+  clearing: {type: 'asset', label: 'Card processor clearing'},
+  ar: {type: 'asset', label: 'Accounts receivable'},
+  inventory: {type: 'asset', label: 'Inventory'},
+  otherca: {type: 'asset', label: 'Other current asset'},
+  fixed: {type: 'asset', label: 'Fixed asset'},
+  ap: {type: 'liability', label: 'Accounts payable'},
+  creditcard: {type: 'liability', label: 'Credit card'},
+  currentliab: {type: 'liability', label: 'Other current liability'},
+  longterm: {type: 'liability', label: 'Long-term liability'},
+  equity: {type: 'equity', label: 'Equity'},
+  income: {type: 'income', label: 'Sales income'},
+  otherincome: {type: 'income', label: 'Other income'},
+  cogs: {type: 'expense', label: 'Cost of goods sold'},
+  expense: {type: 'expense', label: 'Operating expense'},
+  otherexpense: {type: 'expense', label: 'Other expense'},
+};
+const SEED_ACCOUNTS = [
+  ['1000', 'Business Checking', 'bank'],
+  ['1010', 'Business Savings', 'bank'],
+  ['1050', 'Cash Drawer', 'cash'],
+  ['1100', 'Card Processor Clearing', 'clearing', 'Card sales waiting to be paid out by Square/Stripe/Shopify'],
+  ['1200', 'Accounts Receivable', 'ar', 'Corporate or wholesale orders invoiced but not yet paid'],
+  ['1300', 'Inventory – Chocolate & Ingredients', 'inventory', '', '5000'],
+  ['1310', 'Inventory – Packaging', 'inventory', '', '5010'],
+  ['1320', 'Inventory – Resale Goods', 'inventory', '', '5020'],
+  ['1400', 'Prepaid Expenses', 'otherca'],
+  ['1500', 'Equipment & Fixtures', 'fixed'],
+  ['1590', 'Accumulated Depreciation', 'fixed', 'Contra-asset: normally a credit balance'],
+  ['2000', 'Accounts Payable', 'ap', 'Supplier bills you owe'],
+  ['2100', 'Business Credit Card', 'creditcard'],
+  ['2200', 'Sales Tax Payable', 'currentliab'],
+  ['2300', 'Gift Cards Outstanding', 'currentliab', 'Gift cards sold but not yet redeemed'],
+  ['2400', 'Customer Deposits', 'currentliab', 'Deposits on custom/corporate orders not yet delivered'],
+  ['2500', 'Loan Payable', 'longterm'],
+  ['3000', 'Owner Contributions', 'equity'],
+  ['3100', 'Owner Draws', 'equity'],
+  ['3200', 'Opening Balance Equity', 'equity', 'Offsets opening balances when you start'],
+  ['3900', 'Retained Earnings', 'equity'],
+  ['4000', 'Retail Chocolate Sales', 'income'],
+  ['4100', 'Gift Boxes & Corporate Orders', 'income'],
+  ['4200', 'Classes & Tastings', 'income'],
+  ['4300', 'Wholesale Sales', 'income'],
+  ['4900', 'Refunds & Discounts', 'income', 'Contra-income: normally a debit balance'],
+  ['4950', 'Interest & Other Income', 'otherincome'],
+  ['5000', 'COGS – Chocolate & Ingredients', 'cogs'],
+  ['5010', 'COGS – Packaging', 'cogs'],
+  ['5020', 'COGS – Resale Goods', 'cogs'],
+  ['6000', 'Rent', 'expense'],
+  ['6010', 'Utilities', 'expense'],
+  ['6020', 'Card Processing Fees', 'expense'],
+  ['6030', 'Bank Fees', 'expense'],
+  ['6040', 'Wages', 'expense'],
+  ['6050', 'Payroll Taxes', 'expense'],
+  ['6060', 'Insurance', 'expense'],
+  ['6070', 'Advertising & Marketing', 'expense'],
+  ['6080', 'Software & Website', 'expense'],
+  ['6090', 'Repairs & Maintenance', 'expense'],
+  ['6100', 'Shop & Kitchen Supplies', 'expense'],
+  ['6110', 'Shipping & Delivery', 'expense'],
+  ['6120', 'Licenses & Permits', 'expense'],
+  ['6130', 'Legal & Accounting', 'expense'],
+  ['6140', 'Office Supplies', 'expense'],
+  ['6150', 'Depreciation', 'expense'],
+  ['6160', 'Travel & Meals', 'expense'],
+  ['6900', 'Miscellaneous Expense', 'expense'],
+  ['7000', 'Interest Expense', 'otherexpense'],
+];
+const ROLES = {
+  checking:     ['Main bank account',          a => a.sub === 'bank', 'a1000'],
+  cashDrawer:   ['Cash drawer',                a => ['cash', 'bank'].includes(a.sub), 'a1050'],
+  clearing:     ['Card processor clearing',    a => ['clearing', 'bank'].includes(a.sub), 'a1100'],
+  creditCard:   ['Business credit card',       a => a.sub === 'creditcard', 'a2100'],
+  ap:           ['Accounts payable',           a => a.sub === 'ap', 'a2000'],
+  salesTax:     ['Sales tax payable',          a => tOf(a) === 'liability', 'a2200'],
+  giftCards:    ['Gift cards outstanding',     a => tOf(a) === 'liability', 'a2300'],
+  sales:        ['Default sales account',      a => tOf(a) === 'income', 'a4000'],
+  refunds:      ['Refunds & discounts',        a => tOf(a) === 'income', 'a4900'],
+  fees:         ['Card processing fees',       a => tOf(a) === 'expense', 'a6020'],
+  ownerContrib: ['Owner contributions',        a => tOf(a) === 'equity', 'a3000'],
+  ownerDraw:    ['Owner draws',                a => tOf(a) === 'equity', 'a3100'],
+  openingEquity:['Opening balance equity',     a => tOf(a) === 'equity', 'a3200'],
+  retained:     ['Retained earnings',          a => tOf(a) === 'equity', 'a3900'],
+};
+
+function seed() {
+  const roles = {};
+  for (const k in ROLES) roles[k] = ROLES[k][2];
+  return {
+    version: 1,
+    settings: {shopName: '', fyStartMonth: 1, lockDate: '', lastBackup: null, lastChange: null, roles, demo: false},
+    accounts: SEED_ACCOUNTS.map(([code, name, sub, note, cogs]) => ({id: 'a' + code, code, name, sub, note: note || '', active: true, cogs: cogs ? 'a' + cogs : ''})),
+    entries: [], recons: [], items: [], counts: [], nextNo: 1,
+  };
+}
+
+/* ------------------------------- Storage -------------------------------- */
+let db;
+function load() {
+  try { const raw = localStorage.getItem(STORE_KEY); if (raw) return JSON.parse(raw); } catch (e) { console.error(e); }
+  return null;
+}
+function save(changed = true) {
+  if (changed) db.settings.lastChange = Date.now();
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
+  catch (e) { alert('Could not save to browser storage: ' + e.message + '\nDownload a backup now from Settings & Backup.'); }
+  showSaved();
+}
+function showSaved() {
+  const n = db.entries.length;
+  $('#saved').textContent = `${n} entr${n === 1 ? 'y' : 'ies'} · saved in this browser`;
+}
+db = load() || seed();
+try { navigator.storage?.persist?.(); } catch (e) {}
+window.addEventListener('storage', e => {
+  if (e.key === STORE_KEY && e.newValue) { db = JSON.parse(e.newValue); render(); toast('Updated from another tab'); }
+});
+
+/* ------------------------------- Ledger math ---------------------------- */
+const acct = id => db.accounts.find(a => a.id === id);
+const tOf = a => SUBS[a.sub]?.type || 'asset';
+const sign = a => (['asset', 'expense'].includes(tOf(a)) ? 1 : -1);     // natural (normal) balance sign
+const nat = (a, v) => sign(a) * (v || 0);
+const aName = id => { const a = acct(id); return a ? `${a.code} · ${a.name}` : '(deleted account)'; };
+const R = role => {
+  const id = db.settings.roles[role];
+  if (!id || !acct(id)) throw new Error(`Set the "${ROLES[role][0]}" default account in Settings first.`);
+  return id;
+};
+function totals(from, to) {           // Map acctId -> debits minus credits within [from,to]
+  const m = new Map();
+  for (const e of db.entries) {
+    if (from && e.date < from) continue;
+    if (to && e.date > to) continue;
+    for (const l of e.lines) m.set(l.acct, (m.get(l.acct) || 0) + l.dr - l.cr);
+  }
+  return m;
+}
+const bal = (id, to, from) => { const a = acct(id); return a ? nat(a, totals(from, to).get(id)) : 0; };
+function fyStart(d) {
+  const m = +db.settings.fyStartMonth || 1, y = +d.slice(0, 4), dm = +d.slice(5, 7);
+  return `${dm >= m ? y : y - 1}-${pad(m)}-01`;
+}
+const locked = d => db.settings.lockDate && d <= db.settings.lockDate;
+const sortedAccounts = (filter = () => true) =>
+  db.accounts.filter(filter).sort((a, b) => TYPES.indexOf(tOf(a)) - TYPES.indexOf(tOf(b)) || a.code.localeCompare(b.code, undefined, {numeric: true}));
+
+function validateEntry(e) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date || '')) return 'Enter a valid date.';
+  if (locked(e.date)) return `The books are locked through ${fmtDate(db.settings.lockDate)}. Change the lock date in Settings to post on or before it.`;
+  const lines = e.lines.filter(l => l.dr || l.cr);
+  if (lines.length < 2) return 'An entry needs at least two lines with amounts.';
+  for (const l of lines) {
+    if (!acct(l.acct)) return 'Every line with an amount needs an account.';
+    if (l.dr < 0 || l.cr < 0) return 'Amounts cannot be negative. Put the amount in the other column instead.';
+    if (l.dr && l.cr) return 'A line can have a debit or a credit, not both.';
+  }
+  const dr = lines.reduce((s, l) => s + l.dr, 0), cr = lines.reduce((s, l) => s + l.cr, 0);
+  if (dr !== cr) return `Debits (${fmt(dr)}) and credits (${fmt(cr)}) must be equal. Difference: ${fmt(Math.abs(dr - cr))}.`;
+  return null;
+}
+function postEntry(e, {skipValidate = false} = {}) {
+  e.lines = e.lines.filter(l => l.dr || l.cr).map(l => ({id: l.id || uid(), acct: l.acct, dr: l.dr || 0, cr: l.cr || 0, memo: l.memo || '', rec: l.rec || null}));
+  if (!skipValidate) { const err = validateEntry(e); if (err) throw new Error(err); }
+  if (!e.id) { e.id = uid(); e.no = db.nextNo++; e.created = Date.now(); db.entries.push(e); }
+  else { const i = db.entries.findIndex(x => x.id === e.id); db.entries[i] = e; }
+  db.entries.sort((a, b) => a.date.localeCompare(b.date) || a.no - b.no);
+  return e;
+}
+function deleteEntry(id) {
+  db.entries = db.entries.filter(e => e.id !== id);
+  db.counts = db.counts.filter(c => c.entryId !== id);
+}
+const entryTotal = e => e.lines.reduce((s, l) => s + l.dr, 0);
+const hasRec = e => e.lines.some(l => l.rec);
+
+/* ------------------------------ UI helpers ------------------------------ */
+function acctOptions(selected, filter = () => true, {blank = false} = {}) {
+  let out = blank ? `<option value="">— choose account —</option>` : '';
+  for (const t of TYPES) {
+    const list = sortedAccounts(a => tOf(a) === t && (a.active || a.id === selected) && filter(a));
+    if (!list.length) continue;
+    out += `<optgroup label="${TYPE_LABEL[t]}">` + list.map(a => `<option value="${a.id}" ${a.id === selected ? 'selected' : ''}>${esc(a.code)} · ${esc(a.name)}</option>`).join('') + '</optgroup>';
+  }
+  return out;
+}
+let toastTimer;
+function toast(msg, action) {
+  const t = $('#toast');
+  t.innerHTML = `<span>${esc(msg)}</span>` + (action ? `<button id="toastAct">${esc(action.label)}</button>` : '');
+  t.style.display = 'flex';
+  if (action) $('#toastAct').onclick = () => { t.style.display = 'none'; action.fn(); };
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (t.style.display = 'none'), action ? 7000 : 2800);
+}
+const dlg = $('#dlg');
+function openDialog(html, onReady) { dlg.innerHTML = html; dlg.showModal(); onReady?.(dlg); }
+function closeDialog() { dlg.close(); dlg.innerHTML = ''; }
+dlg.addEventListener('click', e => { if (e.target.closest('[data-close]')) closeDialog(); });
+
+const PRESETS = [['thisMonth', 'This month'], ['lastMonth', 'Last month'], ['thisQuarter', 'This quarter'], ['ytd', 'Year to date'], ['lastFY', 'Last year'], ['custom', 'Custom']];
+function presetRange(p) {
+  const t = today(), y = +t.slice(0, 4), m = +t.slice(5, 7);
+  switch (p) {
+    case 'thisMonth': return [`${y}-${pad(m)}-01`, monthEnd(y, m)];
+    case 'lastMonth': { let yy = y, mm = m - 1; if (!mm) { mm = 12; yy--; } return [`${yy}-${pad(mm)}-01`, monthEnd(yy, mm)]; }
+    case 'thisQuarter': { const q = Math.floor((m - 1) / 3) * 3 + 1; return [`${y}-${pad(q)}-01`, monthEnd(y, q + 2)]; }
+    case 'ytd': return [fyStart(t), t];
+    case 'lastFY': { const s = fyStart(t); return [addYears(s, -1), addDays(s, -1)]; }
+  }
+  return null;
+}
+function rangeControls(state) {
+  if (state.preset !== 'custom') [state.from, state.to] = presetRange(state.preset);
+  return `<div class="row noprint">
+    <label class="field"><span>Period</span><select data-r="preset">${PRESETS.map(([k, l]) => `<option value="${k}" ${state.preset === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    <label class="field"><span>From</span><input type="date" data-r="from" value="${state.from || ''}"></label>
+    <label class="field"><span>To</span><input type="date" data-r="to" value="${state.to || ''}"></label></div>`;
+}
+function bindRange(el, state, rerender) {
+  $$('[data-r]', el).forEach(inp => inp.onchange = () => {
+    const k = inp.dataset.r;
+    if (k === 'preset') state.preset = inp.value; else { state[k] = inp.value; state.preset = 'custom'; }
+    rerender();
+  });
+}
+
+/* ------------------------------ Navigation ------------------------------ */
+const VIEWS = [['dash', 'Dashboard'], ['record', 'Record'], ['journal', 'Journal'], ['ledger', 'Ledger'], ['reconcile', 'Reconcile'], ['inventory', 'Inventory'], ['reports', 'Reports'], ['accounts', 'Accounts'], ['settings', 'Settings & Backup']];
+let view = location.hash.slice(1) || 'dash';
+if (!VIEWS.some(v => v[0] === view)) view = 'dash';
+const ui = {
+  template: null, lastDate: null,
+  journal: {q: '', preset: 'thisMonth'},
+  ledger: {acct: '', preset: 'thisMonth'},
+  report: 'pl', pl: {preset: 'thisMonth'}, bsDate: today(), tbDate: today(), monthlyFY: 'this',
+  count: null,
+};
+function go(v, opts = {}) { view = v; Object.assign(ui, opts); history.replaceState(null, '', '#' + v); render(); window.scrollTo(0, 0); }
+function render() {
+  $('#brand').innerHTML = `${esc(db.settings.shopName || 'Shop Books')}<small>double-entry bookkeeping</small>`;
+  document.title = (db.settings.shopName ? db.settings.shopName + ' – ' : '') + 'Shop Books';
+  $('#nav').innerHTML = VIEWS.map(([k, l]) => `<button data-v="${k}" class="${k === view ? 'on' : ''}">${l}</button>`).join('');
+  $$('#nav button').forEach(b => b.onclick = () => { ui.template = null; ui.count = null; go(b.dataset.v); });
+  renderBanner();
+  showSaved();
+  const el = $('#view');
+  ({dash: vDash, record: vRecord, journal: vJournal, ledger: vLedger, reconcile: vReconcile, inventory: vInventory, reports: vReports, accounts: vAccounts, settings: vSettings}[view])(el);
+}
+function renderBanner() {
+  const s = db.settings, b = $('#banner');
+  let msg = '';
+  if (s.demo) msg = `<b>Sample data is loaded.</b> Look around, then erase it in Settings & Backup before you enter real books.`;
+  else if (db.entries.length && s.lastChange && (!s.lastBackup || s.lastChange > s.lastBackup)) {
+    const days = s.lastBackup ? Math.floor((Date.now() - s.lastBackup) / 864e5) : null;
+    if (days === null || days >= 7)
+      msg = `Your books are saved only in this browser. ${days === null ? 'You have not downloaded a backup yet.' : `Your last backup was ${days} days ago.`} <button class="btn sm" id="bkNow">Download backup</button>`;
+  }
+  b.innerHTML = msg ? `<div>${msg}</div>` : '';
+  $('#bkNow')?.addEventListener('click', downloadBackup);
+}
+
+/* ------------------------------- Dashboard ------------------------------ */
+function vDash(el) {
+  const t = today();
+  if (!db.entries.length) {
+    el.innerHTML = `<h1>Welcome</h1>
+    <div class="panel"><p>This is your shop's bookkeeping system. Everything runs in this one file and nothing is sent anywhere. It has no subscription fee.</p>
+    <h3>Getting started</h3>
+    <ol>
+      <li><b>Settings & Backup</b>: enter your shop name and fiscal year.</li>
+      <li><b>Accounts</b>: review the chart of accounts. Rename or add accounts to match your bank and card processor.</li>
+      <li><b>Settings & Backup → Opening balances</b>: enter what's in the bank, the cash drawer and inventory on your start date, plus anything you owe.</li>
+      <li><b>Record</b>: use the quick forms (daily sales, card payout, supplier purchase, and so on). They post the debits and credits for you.</li>
+      <li>Each month: <b>Inventory</b> count, then <b>Reconcile</b> the bank, then check the <b>Reports</b>. Download a backup.</li>
+    </ol>
+    <div class="row"><button class="btn primary" id="goRecord">Record your first transaction</button><button class="btn" id="demo">Explore with sample data</button></div></div>`;
+    $('#goRecord').onclick = () => go('record');
+    $('#demo').onclick = () => { if (confirm('Load sample chocolate shop data? You can erase it later in Settings & Backup.')) { loadDemo(); render(); } };
+    return;
+  }
+  const [mf, mt] = presetRange('thisMonth');
+  const pm = plData(mf, mt), py = plData(fyStart(t), t);
+  const money = sortedAccounts(a => ['bank', 'cash', 'clearing'].includes(a.sub) && a.active);
+  const tt = totals(null, t);
+  const owed = sortedAccounts(a => tOf(a) === 'liability').map(a => [a, nat(a, tt.get(a.id))]).filter(x => x[1]);
+  const inv = sortedAccounts(a => a.sub === 'inventory').reduce((s, a) => s + nat(a, tt.get(a.id)), 0);
+  const lastCount = [...db.counts].sort((a, b) => b.date.localeCompare(a.date))[0];
+  const card = (l, v, sub = '') => `<div class="card"><div class="lbl">${l}</div><div class="val">${fmtN(v)}</div>${sub ? `<div class="small muted">${sub}</div>` : ''}</div>`;
+  el.innerHTML = `<h1>Dashboard</h1><p class="muted">As of ${fmtDate(t)}</p>
+  <h2>Money</h2><div class="grid">${money.map(a => card(esc(a.name), nat(a, tt.get(a.id)), a.sub === 'clearing' ? 'Card sales waiting to be paid out' : lastRecText(a.id))).join('')}</div>
+  <h2>This month</h2><div class="grid">
+    ${card('Sales', pm.income)}${card('Cost of goods sold', pm.cogs, 'Updates when you post an inventory count')}
+    ${card('Gross profit', pm.gross, pm.income ? `${(pm.gross / pm.income * 100).toFixed(1)}% margin` : '')}
+    ${card('Expenses', pm.opex + pm.oe - pm.oi)}${card('Net income', pm.net)}${card('Net income, year to date', py.net)}</div>
+  <h2>Owed & on hand</h2><div class="grid">
+    ${owed.map(([a, v]) => card(esc(a.name), v)).join('') || '<div class="card"><div class="lbl">Nothing owed</div></div>'}
+    ${card('Inventory on the books', inv, lastCount ? `Last count ${fmtDate(lastCount.date)}` : 'No inventory count yet')}</div>
+  <h2>Recent entries</h2><div class="panel tablewrap">${entryTable(db.entries.slice(-8).reverse())}</div>
+  <div class="row noprint"><button class="btn primary" id="goRecord">Record a transaction</button></div>`;
+  $('#goRecord').onclick = () => go('record');
+  bindEntryTable(el);
+}
+function lastRecText(id) {
+  const r = db.recons.filter(r => r.acct === id).sort((a, b) => b.stmtDate.localeCompare(a.stmtDate))[0];
+  return r ? `Reconciled through ${fmtDate(r.stmtDate)}` : 'Not reconciled yet';
+}
+
+/* ------------------------------- Templates ------------------------------ */
+const L = (acctId, dr, cr, memo = '') => ({acct: acctId, dr: dr || 0, cr: cr || 0, memo});
+const D = (a, amt, memo) => (amt ? L(a, amt, 0, memo) : null);
+const C = (a, amt, memo) => (amt ? L(a, 0, amt, memo) : null);
+const need = (v, msg) => { if (!v) throw new Error(msg); };
+const F = {
+  date: {k: 'date', label: 'Date', type: 'date'},
+  memo: {k: 'memo', label: 'Note (optional)', type: 'text'},
+  amount: {k: 'amount', label: 'Amount', type: 'money'},
+};
+const moneyIn = a => ['bank', 'cash', 'clearing'].includes(a.sub);
+const payFrom = a => ['bank', 'cash', 'creditcard', 'ap'].includes(a.sub) || a.id === db.settings.roles.ownerContrib;
+const PAYFROM_HINT = 'Pick Accounts Payable if you will pay the bill later, or Owner Contributions if you paid with personal money.';
+const TEMPLATES = [
+  {key: 'sales', group: 'Sales & money in', title: 'Daily sales', desc: 'Record the day\'s takings from your register or POS summary.',
+    help: 'Enter totals <b>including</b> sales tax. Card sales go to the clearing account until your processor pays them out.',
+    fields: [F.date, {k: 'income', label: 'Sales category', type: 'account', role: 'sales', filter: a => a.sub === 'income'},
+      {k: 'cash', label: 'Cash sales', type: 'money'}, {k: 'card', label: 'Card sales (gross, before fees)', type: 'money'},
+      {k: 'tax', label: 'Sales tax included in the above', type: 'money', hint: 'Leave blank if you don\'t collect sales tax.'},
+      {k: 'cashTo', label: 'Cash goes to', type: 'account', role: 'cashDrawer', filter: moneyIn},
+      {k: 'cardTo', label: 'Card sales go to', type: 'account', role: 'clearing', filter: moneyIn}, F.memo],
+    build: v => {
+      const total = v.cash + v.card; need(total, 'Enter cash or card sales.');
+      if (v.tax > total) throw new Error('Sales tax cannot be more than total sales.');
+      return {memo: v.memo || 'Daily sales', lines: [D(v.cashTo, v.cash, 'Cash sales'), D(v.cardTo, v.card, 'Card sales'), C(v.income, total - v.tax), v.tax ? C(R('salesTax'), v.tax, 'Sales tax collected') : null]};
+    }},
+  {key: 'payout', group: 'Sales & money in', title: 'Card processor payout', desc: 'Square/Stripe/Shopify deposited money in the bank, minus fees.',
+    help: 'Copy the deposit amount and the fees from your processor\'s payout report.', info: () => `Waiting in clearing now: <b>${fmt(bal(db.settings.roles.clearing, today()))}</b>`,
+    fields: [F.date, {k: 'net', label: 'Amount deposited in the bank', type: 'money'}, {k: 'fee', label: 'Processing fees deducted', type: 'money'},
+      {k: 'bank', label: 'Deposited to', type: 'account', role: 'checking', filter: a => a.sub === 'bank'},
+      {k: 'clr', label: 'Paid out from', type: 'account', role: 'clearing', filter: moneyIn},
+      {k: 'feeAcct', label: 'Fee account', type: 'account', role: 'fees', filter: a => tOf(a) === 'expense'}, F.memo],
+    build: v => { need(v.net + v.fee, 'Enter the deposit amount.');
+      return {memo: v.memo || 'Card processor payout', lines: [D(v.bank, v.net), D(v.feeAcct, v.fee, 'Processing fees'), C(v.clr, v.net + v.fee)]}; }},
+  {key: 'deposit', group: 'Sales & money in', title: 'Bank a cash deposit', desc: 'Move cash from the drawer to the bank.',
+    info: () => `Cash drawer balance: <b>${fmt(bal(db.settings.roles.cashDrawer, today()))}</b>`,
+    fields: [F.date, F.amount, {k: 'from', label: 'From', type: 'account', role: 'cashDrawer', filter: a => ['cash', 'bank'].includes(a.sub)},
+      {k: 'to', label: 'To', type: 'account', role: 'checking', filter: a => a.sub === 'bank'}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); if (v.from === v.to) throw new Error('Pick two different accounts.');
+      return {memo: v.memo || 'Cash deposit', lines: [D(v.to, v.amount), C(v.from, v.amount)]}; }},
+  {key: 'gcsold', group: 'Sales & money in', title: 'Gift card sold', desc: 'A customer bought a gift card. You owe them chocolate later, so it is not a sale yet.',
+    fields: [F.date, F.amount, {k: 'to', label: 'Paid with', type: 'account', role: 'clearing', filter: moneyIn}, {k: 'ref', label: 'Gift card # (optional)', type: 'text'}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); return {memo: v.memo || 'Gift card sold', lines: [D(v.to, v.amount), C(R('giftCards'), v.amount)]}; }},
+  {key: 'gcredeem', group: 'Sales & money in', title: 'Gift card redeemed', desc: 'A customer paid with a gift card. This turns it into a sale.',
+    info: () => `Gift cards outstanding: <b>${fmt(bal(db.settings.roles.giftCards, today()))}</b>`,
+    fields: [F.date, F.amount, {k: 'income', label: 'Sales category', type: 'account', role: 'sales', filter: a => a.sub === 'income'}, {k: 'ref', label: 'Gift card # (optional)', type: 'text'}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); return {memo: v.memo || 'Gift card redeemed', lines: [D(R('giftCards'), v.amount), C(v.income, v.amount)]}; }},
+  {key: 'invoice', group: 'Sales & money in', title: 'Invoice a corporate/wholesale order', desc: 'You delivered an order and will be paid later.',
+    fields: [F.date, {k: 'ref', label: 'Customer / invoice #', type: 'text'}, F.amount,
+      {k: 'income', label: 'Sales category', type: 'account', def: 'a4100', filter: a => a.sub === 'income'},
+      {k: 'ar', label: 'Receivable account', type: 'account', def: 'a1200', filter: a => a.sub === 'ar'}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); return {memo: v.memo || 'Invoice', lines: [D(v.ar, v.amount), C(v.income, v.amount)]}; }},
+  {key: 'received', group: 'Sales & money in', title: 'Customer paid an invoice', desc: 'Money received for an order you invoiced earlier.',
+    fields: [F.date, {k: 'ref', label: 'Customer / invoice #', type: 'text'}, F.amount,
+      {k: 'to', label: 'Deposited to', type: 'account', role: 'checking', filter: moneyIn},
+      {k: 'ar', label: 'Receivable account', type: 'account', def: 'a1200', filter: a => a.sub === 'ar'}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); return {memo: v.memo || 'Invoice payment received', lines: [D(v.to, v.amount), C(v.ar, v.amount)]}; }},
+  {key: 'refund', group: 'Sales & money in', title: 'Customer refund', desc: 'Money given back to a customer.',
+    fields: [F.date, {k: 'amount', label: 'Total refunded (incl. tax)', type: 'money'}, {k: 'tax', label: 'Sales tax included', type: 'money'},
+      {k: 'acct', label: 'Refund account', type: 'account', role: 'refunds', filter: a => tOf(a) === 'income'},
+      {k: 'from', label: 'Refunded from', type: 'account', role: 'clearing', filter: moneyIn}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); if (v.tax > v.amount) throw new Error('Tax cannot exceed the refund.');
+      return {memo: v.memo || 'Customer refund', lines: [D(v.acct, v.amount - v.tax), v.tax ? D(R('salesTax'), v.tax) : null, C(v.from, v.amount)]}; }},
+
+  {key: 'purchase', group: 'Purchases & money out', title: 'Buy chocolate, ingredients or packaging', desc: 'Stock purchases go to inventory. They become cost of goods sold when you count.',
+    fields: [F.date, {k: 'ref', label: 'Supplier', type: 'text'}, F.amount,
+      {k: 'inv', label: 'Inventory account', type: 'account', def: 'a1300', filter: a => ['inventory', 'cogs'].includes(a.sub)},
+      {k: 'from', label: 'Paid with', type: 'account', role: 'checking', filter: payFrom, hint: PAYFROM_HINT}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); return {memo: v.memo || ('Purchase' + (v.ref ? ' – ' + v.ref : '')), lines: [D(v.inv, v.amount), C(v.from, v.amount)]}; }},
+  {key: 'expense', group: 'Purchases & money out', title: 'Pay a bill or expense', desc: 'Rent, utilities, insurance, marketing, supplies, equipment and so on.',
+    fields: [F.date, {k: 'ref', label: 'Paid to', type: 'text'}, F.amount,
+      {k: 'exp', label: 'Expense account', type: 'account', def: 'a6000', filter: a => tOf(a) === 'expense' || ['fixed', 'otherca'].includes(a.sub)},
+      {k: 'from', label: 'Paid with', type: 'account', role: 'checking', filter: payFrom, hint: PAYFROM_HINT}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); return {memo: v.memo || (acct(v.exp)?.name + (v.ref ? ' – ' + v.ref : '')), lines: [D(v.exp, v.amount), C(v.from, v.amount)]}; }},
+  {key: 'paybill', group: 'Purchases & money out', title: 'Pay a supplier you owe', desc: 'Pay a bill you recorded earlier on Accounts Payable.',
+    info: () => `Accounts payable balance: <b>${fmt(bal(db.settings.roles.ap, today()))}</b>`,
+    fields: [F.date, {k: 'ref', label: 'Supplier', type: 'text'}, F.amount, {k: 'from', label: 'Paid from', type: 'account', role: 'checking', filter: a => ['bank', 'cash', 'creditcard'].includes(a.sub)}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); return {memo: v.memo || ('Bill payment' + (v.ref ? ' – ' + v.ref : '')), lines: [D(R('ap'), v.amount), C(v.from, v.amount)]}; }},
+  {key: 'paycc', group: 'Purchases & money out', title: 'Pay the credit card', desc: 'A payment from the bank to the business credit card.',
+    info: () => `Credit card balance: <b>${fmt(bal(db.settings.roles.creditCard, today()))}</b>`,
+    fields: [F.date, F.amount, {k: 'cc', label: 'Credit card', type: 'account', role: 'creditCard', filter: a => a.sub === 'creditcard'},
+      {k: 'from', label: 'Paid from', type: 'account', role: 'checking', filter: a => a.sub === 'bank'}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); return {memo: v.memo || 'Credit card payment', lines: [D(v.cc, v.amount), C(v.from, v.amount)]}; }},
+  {key: 'salestax', group: 'Purchases & money out', title: 'Pay sales tax', desc: 'Send collected sales tax to the state.',
+    info: () => `Sales tax payable: <b>${fmt(bal(db.settings.roles.salesTax, today()))}</b>`,
+    fields: [F.date, F.amount, {k: 'from', label: 'Paid from', type: 'account', role: 'checking', filter: a => a.sub === 'bank'}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); return {memo: v.memo || 'Sales tax payment', lines: [D(R('salesTax'), v.amount), C(v.from, v.amount)]}; }},
+  {key: 'payroll', group: 'Purchases & money out', title: 'Payroll', desc: 'Wages and employer payroll taxes paid from the bank, using totals from your payroll service.',
+    help: 'Use the totals from your payroll report. If a payroll service pays the taxes for you, enter them here as well.',
+    fields: [F.date, {k: 'wages', label: 'Gross wages', type: 'money'}, {k: 'emptax', label: 'Employer payroll taxes', type: 'money'},
+      {k: 'from', label: 'Paid from', type: 'account', role: 'checking', filter: a => a.sub === 'bank'}, F.memo],
+    build: v => {
+      need(v.wages, 'Enter gross wages.');
+      if (!acct('a6040') || (v.emptax && !acct('a6050'))) throw new Error('Payroll needs accounts 6040 Wages and 6050 Payroll Taxes.');
+      return {memo: v.memo || 'Payroll', lines: [D('a6040', v.wages), D('a6050', v.emptax), C(v.from, v.wages + v.emptax)]};
+    }},
+
+  {key: 'ownerin', group: 'Owner & transfers', title: 'Owner put money in', desc: 'You invested personal money in the business.',
+    fields: [F.date, F.amount, {k: 'to', label: 'Deposited to', type: 'account', role: 'checking', filter: moneyIn}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); return {memo: v.memo || 'Owner contribution', lines: [D(v.to, v.amount), C(R('ownerContrib'), v.amount)]}; }},
+  {key: 'ownerout', group: 'Owner & transfers', title: 'Owner draw', desc: 'You took money out of the business for yourself.',
+    fields: [F.date, F.amount, {k: 'from', label: 'Paid from', type: 'account', role: 'checking', filter: moneyIn}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); return {memo: v.memo || 'Owner draw', lines: [D(R('ownerDraw'), v.amount), C(v.from, v.amount)]}; }},
+  {key: 'transfer', group: 'Owner & transfers', title: 'Transfer between accounts', desc: 'For example checking to savings, or adding change to the drawer.',
+    fields: [F.date, F.amount, {k: 'from', label: 'From', type: 'account', role: 'checking', filter: moneyIn},
+      {k: 'to', label: 'To', type: 'account', def: 'a1010', filter: moneyIn}, F.memo],
+    build: v => { need(v.amount, 'Enter an amount.'); if (v.from === v.to) throw new Error('Pick two different accounts.');
+      return {memo: v.memo || 'Transfer', lines: [D(v.to, v.amount), C(v.from, v.amount)]}; }},
+];
+
+function vRecord(el) {
+  const t = TEMPLATES.find(t => t.key === ui.template);
+  if (!t) {
+    const groups = [...new Set(TEMPLATES.map(t => t.group))];
+    el.innerHTML = `<h1>Record a transaction</h1><p class="muted">Pick what happened. The form posts a balanced double-entry journal entry for you.</p>` +
+      groups.map(g => `<h2>${g}</h2><div class="grid">` + TEMPLATES.filter(t => t.group === g).map(t => `<button class="tile" data-t="${t.key}"><b>${esc(t.title)}</b><span>${esc(t.desc)}</span></button>`).join('') + '</div>').join('') +
+      `<h2>Anything else</h2><div class="grid"><button class="tile" id="je"><b>General journal entry</b><span>Write the debits and credits yourself, for depreciation, loans, corrections and so on.</span></button>
+       <button class="tile" id="cnt"><b>Inventory count / COGS</b><span>Month-end: count what's left and post cost of goods sold.</span></button></div>`;
+    $$('[data-t]', el).forEach(b => b.onclick = () => { ui.template = b.dataset.t; render(); });
+    $('#je').onclick = () => openEntryEditor(null);
+    $('#cnt').onclick = () => go('inventory');
+    return;
+  }
+  el.innerHTML = `<p class="noprint"><a href="#" id="back">← All transaction types</a></p><h1>${esc(t.title)}</h1><p class="muted">${esc(t.desc)}</p>
+    ${t.help ? `<div class="help"><p>${t.help}</p></div>` : ''}${t.info ? `<p>${t.info()}</p>` : ''}
+    <form class="panel" id="tf" autocomplete="off"><div class="form">${t.fields.map(fieldHtml).join('')}</div>
+    <h3>What will be posted</h3><div id="pv" class="tablewrap"></div>
+    <div class="row" style="margin-top:12px"><button class="btn primary" type="submit">Post entry</button><span id="tfErr" class="err"></span></div></form>`;
+  $('#back').onclick = e => { e.preventDefault(); ui.template = null; render(); };
+  const form = $('#tf');
+  const preview = () => {
+    $('#tfErr').textContent = '';
+    try {
+      const {lines} = buildFrom(t, form);
+      const dr = lines.reduce((s, l) => s + l.dr, 0);
+      $('#pv').innerHTML = `<table><thead><tr><th>Account</th><th class="n">Debit</th><th class="n">Credit</th></tr></thead><tbody>` +
+        lines.map(l => `<tr><td>${esc(aName(l.acct))}${l.memo ? ` <span class="muted small">${esc(l.memo)}</span>` : ''}</td><td class="n">${fmtB(l.dr)}</td><td class="n">${fmtB(l.cr)}</td></tr>`).join('') +
+        `<tr class="sub"><td>Total</td><td class="n">${fmt(dr)}</td><td class="n">${fmt(dr)}</td></tr></tbody></table>`;
+    } catch (e) { $('#pv').innerHTML = `<p class="muted small">${esc(e.message)}</p>`; }
+  };
+  form.addEventListener('input', preview);
+  form.addEventListener('change', preview);
+  preview();
+  form.onsubmit = ev => {
+    ev.preventDefault();
+    try {
+      const built = buildFrom(t, form);
+      const e = postEntry({date: built.date, ref: built.ref, memo: built.memo, kind: t.key, lines: built.lines});
+      save(); ui.lastDate = e.date;
+      $$('input', form).forEach(i => { if (i.type !== 'date') i.value = ''; });
+      preview(); renderBanner();
+      $('input.money', form)?.focus();
+      toast(`Posted entry #${e.no}`, {label: 'Undo', fn: () => { deleteEntry(e.id); save(); render(); toast('Entry removed'); }});
+    } catch (err) { $('#tfErr').textContent = err.message; }
+  };
+}
+function fieldHtml(f) {
+  const id = 'f_' + f.k;
+  let input;
+  if (f.type === 'date') input = `<input type="date" id="${id}" name="${f.k}" value="${ui.lastDate || today()}" required>`;
+  else if (f.type === 'money') input = `<input id="${id}" name="${f.k}" class="money" inputmode="decimal" placeholder="0.00">`;
+  else if (f.type === 'account') input = `<select id="${id}" name="${f.k}">${acctOptions(f.role ? db.settings.roles[f.role] : f.def, f.filter)}</select>`;
+  else input = `<input id="${id}" name="${f.k}" type="text">`;
+  return `<label class="field" for="${id}"><span>${esc(f.label)}</span>${input}${f.hint ? `<small>${esc(f.hint)}</small>` : ''}</label>`;
+}
+function buildFrom(t, form) {
+  const v = {};
+  for (const f of t.fields) {
+    const raw = form.elements[f.k].value;
+    if (f.type === 'money') {
+      const c = parseMoney(raw);
+      if (Number.isNaN(c)) throw new Error(`"${f.label}" isn't a valid amount.`);
+      if (c < 0) throw new Error(`"${f.label}" can't be negative.`);
+      v[f.k] = c;
+    } else v[f.k] = raw.trim();
+  }
+  const out = t.build(v);
+  return {date: v.date, ref: v.ref || '', memo: out.memo, lines: out.lines.filter(Boolean)};
+}
+
+/* ----------------------- General journal entry editor ------------------- */
+function openEntryEditor(entry) {
+  const e = entry ? structuredClone(entry) : {date: ui.lastDate || today(), ref: '', memo: '', kind: 'journal', lines: [L('', 0, 0), L('', 0, 0)]};
+  const ro = entry && hasRec(entry), lk = entry && locked(entry.date);
+  const frozen = ro || lk;
+  const lineRow = (l, i) => `<tr data-i="${i}">
+    <td><select data-f="acct" ${frozen ? 'disabled' : ''}>${acctOptions(l.acct, () => true, {blank: true})}</select></td>
+    <td><input data-f="memo" value="${esc(l.memo)}" placeholder="Line note" ${frozen ? 'disabled' : ''}></td>
+    <td><input data-f="dr" class="money" inputmode="decimal" value="${l.dr ? plain(l.dr) : ''}" ${frozen ? 'disabled' : ''}></td>
+    <td><input data-f="cr" class="money" inputmode="decimal" value="${l.cr ? plain(l.cr) : ''}" ${frozen ? 'disabled' : ''}></td>
+    <td>${frozen ? (l.rec ? '<span class="pill" title="Reconciled">R</span>' : '') : `<button type="button" class="btn sm" data-del="${i}" title="Remove line">✕</button>`}</td></tr>`;
+  const draw = () => {
+    openDialog(`<div class="dhead"><h2>${entry ? `Entry #${entry.no}` : 'General journal entry'}</h2><button class="btn sm" data-close>Close</button></div>
+    <div class="dbody">
+      ${ro ? '<div class="help"><p>Some lines in this entry are reconciled, so only the reference and note can be changed. To change amounts, undo that reconciliation on the Reconcile page.</p></div>' : ''}
+      ${lk ? `<div class="help"><p>This entry is dated inside the locked period (through ${fmtDate(db.settings.lockDate)}), so it can't be changed.</p></div>` : ''}
+      <div class="row" style="margin:10px 0">
+        <label class="field"><span>Date</span><input type="date" id="jeDate" value="${e.date}" ${frozen ? 'disabled' : ''}></label>
+        <label class="field"><span>Reference</span><input id="jeRef" value="${esc(e.ref)}" placeholder="Check #, invoice #…" ${lk ? 'disabled' : ''}></label>
+        <label class="field" style="flex:1;min-width:200px"><span>Description</span><input id="jeMemo" value="${esc(e.memo)}" ${lk ? 'disabled' : ''}></label>
+      </div>
+      <div class="tablewrap"><table class="lines"><thead><tr><th style="width:38%">Account</th><th>Note</th><th class="n">Debit</th><th class="n">Credit</th><th></th></tr></thead>
+      <tbody>${e.lines.map(lineRow).join('')}</tbody>
+      <tfoot><tr><td>${frozen ? '' : '<button type="button" class="btn sm" id="addLine">+ Add line</button>'}</td><td class="n muted">Totals</td><td class="n" id="tDr"></td><td class="n" id="tCr"></td><td></td></tr></tfoot></table></div>
+      <p id="jeStatus"></p>
+      <p class="small muted">Debits increase assets and expenses. Credits increase liabilities, equity and income. Total debits must equal total credits.</p>
+    </div>
+    <div class="dfoot">${entry && !frozen ? '<button class="btn danger" id="jeDel" style="margin-right:auto">Delete entry</button>' : ''}
+      <button class="btn" data-close>Cancel</button>${lk ? '' : '<button class="btn primary" id="jeSave">Save</button>'}</div>`, wire);
+  };
+  const collect = () => {
+    $$('tbody tr', dlg).forEach(tr => {
+      const l = e.lines[+tr.dataset.i];
+      l.acct = $('[data-f=acct]', tr).value; l.memo = $('[data-f=memo]', tr).value;
+      l._dr = $('[data-f=dr]', tr).value; l._cr = $('[data-f=cr]', tr).value;
+      l.dr = parseMoney(l._dr); l.cr = parseMoney(l._cr);
+    });
+    e.date = $('#jeDate').value; e.ref = $('#jeRef').value.trim(); e.memo = $('#jeMemo').value.trim();
+  };
+  const status = () => {
+    collect();
+    const bad = e.lines.some(l => Number.isNaN(l.dr) || Number.isNaN(l.cr));
+    const dr = e.lines.reduce((s, l) => s + (l.dr || 0), 0), cr = e.lines.reduce((s, l) => s + (l.cr || 0), 0);
+    $('#tDr').textContent = fmt(dr); $('#tCr').textContent = fmt(cr);
+    $('#jeStatus').innerHTML = bad ? '<span class="err">One of the amounts isn\'t a valid number.</span>'
+      : dr === cr && dr ? '<span class="ok">✓ Balanced</span>' : dr || cr ? `<span class="err">Out of balance by ${fmt(Math.abs(dr - cr))}</span>` : '';
+  };
+  const wire = () => {
+    status();
+    $('.dbody', dlg).addEventListener('input', status);
+    $('.dbody', dlg).addEventListener('change', status);
+    $('#addLine')?.addEventListener('click', () => { collect(); e.lines.push(L('', 0, 0)); draw(); });
+    $$('[data-del]', dlg).forEach(b => b.onclick = () => { collect(); e.lines.splice(+b.dataset.del, 1); if (e.lines.length < 2) e.lines.push(L('', 0, 0)); draw(); });
+    $('#jeDel')?.addEventListener('click', () => {
+      if (!confirm(`Delete entry #${entry.no}? This cannot be undone (except by restoring a backup).`)) return;
+      deleteEntry(entry.id); save(); closeDialog(); render(); toast('Entry deleted');
+    });
+    $('#jeSave')?.addEventListener('click', () => {
+      collect();
+      if (e.lines.some(l => Number.isNaN(l.dr) || Number.isNaN(l.cr))) { $('#jeStatus').innerHTML = '<span class="err">Fix the invalid amounts first.</span>'; return; }
+      try {
+        if (ro) { const orig = db.entries.find(x => x.id === entry.id); orig.ref = e.ref; orig.memo = e.memo; }
+        else postEntry({...e, lines: e.lines.map(({_dr, _cr, ...l}) => l)});
+        save(); closeDialog(); ui.lastDate = e.date; render(); toast(entry ? 'Entry updated' : 'Entry posted');
+      } catch (err) { $('#jeStatus').innerHTML = `<span class="err">${esc(err.message)}</span>`; }
+    });
+  };
+  draw();
+}
+
+/* -------------------------------- Journal ------------------------------- */
+const KIND_LABEL = Object.fromEntries(TEMPLATES.map(t => [t.key, t.title]));
+Object.assign(KIND_LABEL, {journal: 'Journal entry', count: 'Inventory count', opening: 'Opening balances'});
+function entryTable(list, {showKind = true} = {}) {
+  if (!list.length) return '<p class="muted">No entries.</p>';
+  return `<table><thead><tr><th>Date</th><th>#</th><th>Description</th><th>Accounts</th><th class="n">Amount</th></tr></thead><tbody>` +
+    list.map(e => `<tr class="click" data-e="${e.id}"><td style="white-space:nowrap">${fmtDate(e.date)}</td><td>${e.no}</td>
+      <td>${esc(e.memo)}${e.ref ? ` <span class="muted small">· ${esc(e.ref)}</span>` : ''}${showKind ? `<div class="small muted">${[KIND_LABEL[e.kind] !== e.memo ? esc(KIND_LABEL[e.kind] || '') : '', hasRec(e) ? 'reconciled' : ''].filter(Boolean).join(' · ')}</div>` : ''}</td>
+      <td class="small">${e.lines.map(l => `${esc(acct(l.acct)?.name || '?')} <span class="muted">${l.dr ? 'Dr' : 'Cr'}</span>`).join('<br>')}</td>
+      <td class="n">${fmt(entryTotal(e))}</td></tr>`).join('') + '</tbody></table>';
+}
+function bindEntryTable(el) {
+  $$('tr[data-e]', el).forEach(tr => tr.onclick = () => openEntryEditor(db.entries.find(e => e.id === tr.dataset.e)));
+}
+function vJournal(el) {
+  const s = ui.journal;
+  const draw = () => {
+    const [from, to] = s.preset === 'custom' ? [s.from, s.to] : presetRange(s.preset);
+    const q = s.q.toLowerCase();
+    const list = db.entries.filter(e => (!from || e.date >= from) && (!to || e.date <= to) &&
+      (!q || [e.memo, e.ref, e.no, ...e.lines.map(l => aName(l.acct) + ' ' + l.memo + ' ' + plain(l.dr || l.cr))].join(' ').toLowerCase().includes(q))).slice().reverse();
+    $('#jl').innerHTML = entryTable(list);
+    $('#jc').textContent = `${list.length} entr${list.length === 1 ? 'y' : 'ies'}`;
+    bindEntryTable(el);
+  };
+  el.innerHTML = `<div class="row"><h1>Journal</h1><span class="right"></span><button class="btn primary noprint" id="newJe">+ General journal entry</button></div>
+    <div class="panel"><div class="row">${rangeControls(s)}<label class="field noprint" style="flex:1;min-width:180px"><span>Search</span><input id="jq" value="${esc(s.q)}" placeholder="Description, account, amount…"></label></div>
+    <p class="muted small" id="jc"></p><div class="tablewrap" id="jl"></div></div>`;
+  bindRange(el, s, () => vJournal(el));
+  $('#jq').oninput = ev => { s.q = ev.target.value; draw(); };
+  $('#newJe').onclick = () => openEntryEditor(null);
+  draw();
+}
+
+/* --------------------------------- Ledger ------------------------------- */
+function vLedger(el) {
+  const s = ui.ledger;
+  if (!s.acct || !acct(s.acct)) s.acct = db.settings.roles.checking || db.accounts[0]?.id;
+  const [from, to] = s.preset === 'custom' ? [s.from, s.to] : presetRange(s.preset);
+  const a = acct(s.acct);
+  const opening = from ? nat(a, totals(null, addDays(from, -1)).get(a.id)) : 0;
+  let run = opening, rows = '';
+  for (const e of db.entries) {
+    if ((from && e.date < from) || (to && e.date > to)) continue;
+    for (const l of e.lines) {
+      if (l.acct !== a.id) continue;
+      run += nat(a, l.dr - l.cr);
+      rows += `<tr class="click" data-e="${e.id}"><td style="white-space:nowrap">${fmtDate(e.date)}</td><td>${e.no}</td><td>${esc(e.memo)}${l.memo ? ` <span class="muted small">· ${esc(l.memo)}</span>` : ''}${e.ref ? ` <span class="muted small">· ${esc(e.ref)}</span>` : ''}</td>
+        <td class="small muted">${esc(e.lines.filter(x => x !== l).map(x => acct(x.acct)?.name).join(', '))}</td><td>${l.rec ? '<span class="pill" title="Reconciled">R</span>' : ''}</td>
+        <td class="n">${fmtB(l.dr)}</td><td class="n">${fmtB(l.cr)}</td><td class="n">${fmtN(run)}</td></tr>`;
+    }
+  }
+  el.innerHTML = `<h1>Account ledger</h1><div class="panel"><div class="row">
+      <label class="field" style="min-width:260px"><span>Account</span><select id="la">${acctOptions(a.id)}</select></label>${rangeControls(s)}</div></div>
+    <div class="panel"><div class="print-only"><b>${esc(db.settings.shopName)}</b></div><h2 style="margin-top:0">${esc(a.code)} · ${esc(a.name)}</h2><p class="muted small">${esc(SUBS[a.sub].label)} · ${fmtDate(from) || 'beginning'} to ${fmtDate(to)}</p>
+    <div class="tablewrap"><table><thead><tr><th>Date</th><th>#</th><th>Description</th><th>Other side</th><th></th><th class="n">Debit</th><th class="n">Credit</th><th class="n">Balance</th></tr></thead>
+    <tbody><tr><td colspan="7" class="muted">Balance forward</td><td class="n">${fmtN(opening)}</td></tr>${rows}
+    <tr class="tot"><td colspan="7">Ending balance</td><td class="n">${fmtN(run)}</td></tr></tbody></table></div></div>`;
+  $('#la').onchange = ev => { s.acct = ev.target.value; vLedger(el); };
+  bindRange(el, s, () => vLedger(el));
+  bindEntryTable(el);
+}
+
+/* ------------------------------- Reconcile ------------------------------ */
+function vReconcile(el) {
+  const draft = db.reconDraft;
+  if (draft && acct(draft.acct)) return reconWork(el, draft);
+  const recAccts = sortedAccounts(a => ['bank', 'clearing', 'creditcard', 'cash'].includes(a.sub) && a.active);
+  const hist = [...db.recons].sort((a, b) => b.stmtDate.localeCompare(a.stmtDate));
+  el.innerHTML = `<h1>Reconcile</h1>
+    <div class="help"><p>Once a month, match your books to the bank or credit card statement. Tick each transaction that appears on the statement. When the difference is $0.00, your books match the bank.</p></div>
+    <div class="panel"><div class="row">
+      <label class="field" style="min-width:240px"><span>Account</span><select id="ra">${recAccts.map(a => `<option value="${a.id}">${esc(a.code)} · ${esc(a.name)}</option>`).join('')}</select></label>
+      <label class="field"><span>Statement ending date</span><input type="date" id="rd" value="${today()}"></label>
+      <label class="field"><span>Statement ending balance</span><input id="rb" class="money" inputmode="decimal" placeholder="0.00"></label>
+      <button class="btn primary" id="rs">Start reconciling</button></div>
+      <p class="small muted" id="rinfo"></p><p class="err" id="rerr"></p></div>
+    <h2>History</h2><div class="panel tablewrap">${hist.length ? `<table><thead><tr><th>Account</th><th>Statement date</th><th class="n">Ending balance</th><th class="n">Items</th><th></th></tr></thead><tbody>` +
+      hist.map(r => `<tr><td>${esc(aName(r.acct))}</td><td>${fmtDate(r.stmtDate)}</td><td class="n">${fmt(r.endBal)}</td><td class="n">${r.lineIds.length}</td>
+      <td class="n">${latestRecon(r.acct)?.id === r.id ? `<button class="btn sm danger" data-undo="${r.id}">Undo</button>` : ''}</td></tr>`).join('') + '</tbody></table>' : '<p class="muted">No reconciliations yet.</p>'}</div>`;
+  const info = () => { const r = latestRecon($('#ra').value); $('#rinfo').textContent = r ? `Last reconciled through ${fmtDate(r.stmtDate)}, balance ${fmt(r.endBal)}.` : 'Never reconciled. Starting balance is $0.00.'; };
+  $('#ra').onchange = info; info();
+  $('#rs').onclick = () => {
+    const endBal = parseMoney($('#rb').value), stmtDate = $('#rd').value;
+    if (!stmtDate) return ($('#rerr').textContent = 'Enter the statement date.');
+    if (Number.isNaN(endBal) || $('#rb').value.trim() === '') return ($('#rerr').textContent = 'Enter the statement ending balance. Use a minus sign for an overdraft.');
+    const last = latestRecon($('#ra').value);
+    if (last && stmtDate <= last.stmtDate) return ($('#rerr').textContent = `Pick a date after the last reconciliation (${fmtDate(last.stmtDate)}).`);
+    db.reconDraft = {acct: $('#ra').value, stmtDate, endBal, checked: []};
+    save(false); vReconcile(el);
+  };
+  $$('[data-undo]', el).forEach(b => b.onclick = () => {
+    const r = db.recons.find(r => r.id === b.dataset.undo);
+    if (!confirm(`Undo the reconciliation of ${aName(r.acct)} through ${fmtDate(r.stmtDate)}? Its transactions will be unticked.`)) return;
+    for (const e of db.entries) for (const l of e.lines) if (l.rec === r.id) l.rec = null;
+    db.recons = db.recons.filter(x => x.id !== r.id); save(); vReconcile(el); toast('Reconciliation undone');
+  });
+}
+const latestRecon = id => db.recons.filter(r => r.acct === id).sort((a, b) => b.stmtDate.localeCompare(a.stmtDate))[0];
+function reconWork(el, d) {
+  const a = acct(d.acct), isLiab = tOf(a) === 'liability';
+  const beg = latestRecon(a.id)?.endBal || 0;
+  const items = [];
+  for (const e of db.entries) if (e.date <= d.stmtDate) for (const l of e.lines) if (l.acct === a.id && !l.rec) items.push({e, l});
+  const checked = new Set(d.checked.filter(id => items.some(x => x.l.id === id)));
+  const [inLbl, outLbl] = isLiab ? ['Payments & credits', 'Charges'] : ['Deposits', 'Withdrawals'];
+  el.innerHTML = `<h1>Reconcile ${esc(a.name)}</h1><p class="muted">Statement ending ${fmtDate(d.stmtDate)}</p>
+    <div class="grid"><div class="card"><div class="lbl">Beginning balance</div><div class="val">${fmtN(beg)}</div></div>
+      <div class="card"><div class="lbl">Cleared balance</div><div class="val" id="cb"></div></div>
+      <div class="card"><div class="lbl">Statement ending balance</div><div class="val">${fmtN(d.endBal)}</div></div>
+      <div class="card"><div class="lbl">Difference</div><div class="val" id="df"></div></div></div>
+    <div class="panel"><div class="row noprint"><button class="btn sm" id="all">Tick all</button><button class="btn sm" id="none">Untick all</button><span class="right"></span>
+      <button class="btn" id="cancel">Cancel</button><button class="btn" id="later">Save for later</button><button class="btn primary" id="finish">Finish</button></div>
+    <div class="tablewrap"><table><thead><tr><th></th><th>Date</th><th>#</th><th>Description</th><th class="n">${outLbl}</th><th class="n">${inLbl}</th></tr></thead><tbody>
+    ${items.map(({e, l}) => `<tr><td><input type="checkbox" data-l="${l.id}" ${checked.has(l.id) ? 'checked' : ''} aria-label="Cleared"></td><td style="white-space:nowrap">${fmtDate(e.date)}</td><td>${e.no}</td>
+      <td>${esc(e.memo)}${e.ref ? ` <span class="muted small">· ${esc(e.ref)}</span>` : ''}</td>
+      <td class="n">${fmtB(l.cr)}</td><td class="n">${fmtB(l.dr)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No uncleared transactions up to this date.</td></tr>'}
+    </tbody></table></div><p class="small muted">Something on the statement that isn't in your books, such as a bank fee or interest? Record it (Record → Pay a bill or expense), then come back. Your ticks are kept.</p></div>`;
+  const calc = () => {
+    let cb = beg;
+    for (const {l} of items) if (checked.has(l.id)) cb += nat(a, l.dr - l.cr);
+    const diff = d.endBal - cb;
+    $('#cb').innerHTML = fmtN(cb);
+    $('#df').innerHTML = diff ? `<span class="err">${fmt(diff)}</span>` : '<span class="ok">$0.00 ✓</span>';
+    $('#finish').disabled = diff !== 0;
+    d.checked = [...checked];
+  };
+  $$('[data-l]', el).forEach(c => c.onchange = () => { c.checked ? checked.add(c.dataset.l) : checked.delete(c.dataset.l); calc(); save(false); });
+  $('#all').onclick = () => { items.forEach(x => checked.add(x.l.id)); $$('[data-l]', el).forEach(c => c.checked = true); calc(); };
+  $('#none').onclick = () => { checked.clear(); $$('[data-l]', el).forEach(c => c.checked = false); calc(); };
+  $('#cancel').onclick = () => { if (confirm('Discard this reconciliation in progress?')) { delete db.reconDraft; save(false); vReconcile(el); } };
+  $('#later').onclick = () => { save(false); go('dash'); toast('Reconciliation saved. Open Reconcile to continue.'); };
+  $('#finish').onclick = () => {
+    const r = {id: uid(), acct: a.id, stmtDate: d.stmtDate, endBal: d.endBal, lineIds: [...checked], done: Date.now()};
+    for (const {l} of items) if (checked.has(l.id)) l.rec = r.id;
+    db.recons.push(r); delete db.reconDraft; save(); vReconcile(el); toast(`${a.name} reconciled through ${fmtDate(r.stmtDate)}`);
+  };
+  calc();
+}
+
+/* ------------------------------- Inventory ------------------------------ */
+function vInventory(el) {
+  if (ui.count) return countForm(el);
+  const invAccts = sortedAccounts(a => a.sub === 'inventory');
+  const t = today(), tt = totals(null, t);
+  el.innerHTML = `<h1>Inventory & cost of goods sold</h1>
+  <div class="help"><p><b>How it works (periodic inventory):</b> when you buy chocolate, ingredients or packaging, record it with <i>Record → Buy chocolate, ingredients or packaging</i>. It goes into an inventory account.</p>
+  <p>At the end of each month, count what's left and enter it below. The difference between what the books say and what you counted is what you used up, sold or wasted. That amount is posted to <b>Cost of goods sold</b>, so your gross profit is accurate.</p></div>
+  <div class="grid" style="margin-top:12px">${invAccts.map(a => `<div class="card"><div class="lbl">${esc(a.name)}</div><div class="val">${fmtN(nat(a, tt.get(a.id)))}</div><div class="small muted">Used up → ${esc(acct(a.cogs)?.name || '⚠ no COGS account set')}</div></div>`).join('')}</div>
+  <div class="row" style="margin-top:12px"><button class="btn primary" id="newCount">Take an inventory count</button></div>
+  <h2>Count sheet items</h2><p class="muted small">Optional. List the things you count, with a unit cost, so the count adds itself up. Without a list, you can type a total value per account when you count.</p>
+  <div class="panel tablewrap"><table><thead><tr><th>Item</th><th>Inventory account</th><th>Unit</th><th class="n">Unit cost</th><th></th></tr></thead><tbody>
+    ${db.items.map(i => `<tr><td>${esc(i.name)}</td><td class="small">${esc(acct(i.acct)?.name || '?')}</td><td>${esc(i.unit)}</td><td class="n">${fmt(i.cost)}</td>
+      <td class="n"><button class="btn sm" data-ed="${i.id}">Edit</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">No items yet.</td></tr>'}
+  </tbody></table><div class="row" style="margin-top:10px"><button class="btn" id="addItem">+ Add item</button></div></div>
+  <h2>Past counts</h2><div class="panel tablewrap">${db.counts.length ? `<table><thead><tr><th>Date</th><th class="n">Counted value</th><th class="n">Posted to COGS</th><th></th></tr></thead><tbody>` +
+    [...db.counts].sort((a, b) => b.date.localeCompare(a.date)).map(c => { const e = db.entries.find(e => e.id === c.entryId);
+      const cg = e ? e.lines.filter(l => acct(l.acct)?.sub === 'cogs').reduce((s, l) => s + l.dr - l.cr, 0) : 0;
+      return `<tr><td>${fmtDate(c.date)}</td><td class="n">${fmt(c.total)}</td><td class="n">${fmt(cg)}</td><td class="n">${e ? `<button class="btn sm" data-open="${e.id}">View entry</button> ` : ''}<button class="btn sm danger" data-dc="${c.id}">Delete</button></td></tr>`; }).join('') + '</tbody></table>' : '<p class="muted">No counts yet.</p>'}</div>`;
+  $('#newCount').onclick = () => { ui.count = {date: today(), qty: {}, manual: {}}; vInventory(el); };
+  $('#addItem').onclick = () => itemEditor(null, el);
+  $$('[data-ed]', el).forEach(b => b.onclick = () => itemEditor(db.items.find(i => i.id === b.dataset.ed), el));
+  $$('[data-open]', el).forEach(b => b.onclick = () => openEntryEditor(db.entries.find(e => e.id === b.dataset.open)));
+  $$('[data-dc]', el).forEach(b => b.onclick = () => {
+    const c = db.counts.find(c => c.id === b.dataset.dc), e = db.entries.find(e => e.id === c.entryId);
+    if (e && locked(e.date)) return alert('That count is in the locked period.');
+    if (e && hasRec(e)) return alert('That entry has reconciled lines.');
+    if (!confirm(`Delete the ${fmtDate(c.date)} count and its COGS entry?`)) return;
+    if (e) deleteEntry(e.id); db.counts = db.counts.filter(x => x.id !== c.id); save(); vInventory(el);
+  });
+}
+function itemEditor(item, el) {
+  const i = item || {name: '', acct: 'a1300', unit: '', cost: 0};
+  openDialog(`<div class="dhead"><h2>${item ? 'Edit item' : 'Add count item'}</h2><button class="btn sm" data-close>Close</button></div>
+  <div class="dbody"><div class="form">
+    <label class="field"><span>Item name</span><input id="iN" value="${esc(i.name)}" placeholder="e.g. 70% dark couverture"></label>
+    <label class="field"><span>Inventory account</span><select id="iA">${acctOptions(i.acct, a => a.sub === 'inventory')}</select></label>
+    <label class="field"><span>Unit</span><input id="iU" value="${esc(i.unit)}" placeholder="kg, box, each…"></label>
+    <label class="field"><span>Cost per unit</span><input id="iC" class="money" inputmode="decimal" value="${i.cost ? plain(i.cost) : ''}"></label></div><p class="err" id="iE"></p></div>
+  <div class="dfoot">${item ? '<button class="btn danger" id="iDel" style="margin-right:auto">Delete</button>' : ''}<button class="btn" data-close>Cancel</button><button class="btn primary" id="iS">Save</button></div>`, () => {
+    $('#iS').onclick = () => {
+      const cost = parseMoney($('#iC').value), name = $('#iN').value.trim();
+      if (!name) return ($('#iE').textContent = 'Enter a name.');
+      if (Number.isNaN(cost) || cost < 0) return ($('#iE').textContent = 'Enter a valid unit cost.');
+      Object.assign(i, {name, acct: $('#iA').value, unit: $('#iU').value.trim(), cost});
+      if (!item) { i.id = uid(); db.items.push(i); }
+      save(); closeDialog(); vInventory(el);
+    };
+    $('#iDel')?.addEventListener('click', () => { db.items = db.items.filter(x => x.id !== i.id); save(); closeDialog(); vInventory(el); });
+  });
+}
+function countForm(el) {
+  const c = ui.count, invAccts = sortedAccounts(a => a.sub === 'inventory' && a.active);
+  el.innerHTML = `<p><a href="#" id="back">← Inventory</a></p><h1>Inventory count</h1>
+  <div class="panel"><div class="row"><label class="field"><span>Count date (usually the last day of the month)</span><input type="date" id="cd" value="${c.date}"></label></div>
+  ${db.items.length ? `<h3>Count sheet</h3><div class="tablewrap"><table><thead><tr><th>Item</th><th>Unit</th><th class="n">Unit cost</th><th class="n" style="width:130px">Quantity on hand</th><th class="n">Value</th></tr></thead><tbody>
+    ${invAccts.map(a => { const its = db.items.filter(i => i.acct === a.id); return its.length ? `<tr class="sec"><td colspan="5">${esc(a.name)}</td></tr>` + its.map(i => `<tr><td class="ind">${esc(i.name)}</td><td>${esc(i.unit)}</td><td class="n">${fmt(i.cost)}</td>
+      <td class="n"><input class="money" style="width:110px" inputmode="decimal" data-q="${i.id}" value="${c.qty[i.id] ?? ''}"></td><td class="n" data-v="${i.id}"></td></tr>`).join('') : ''; }).join('')}
+  </tbody></table></div>` : ''}
+  <h3>Summary</h3><div class="tablewrap"><table><thead><tr><th>Inventory account</th><th class="n">${db.items.length ? 'Other items not on the sheet' : 'Value counted'}</th><th class="n">Counted total</th><th class="n">Books say</th><th class="n">Used → COGS</th></tr></thead><tbody>
+    ${invAccts.map(a => `<tr><td>${esc(a.name)}</td><td class="n"><input class="money" style="width:120px" inputmode="decimal" data-m="${a.id}" value="${c.manual[a.id] ?? ''}"></td><td class="n" data-ct="${a.id}"></td><td class="n" data-bk="${a.id}"></td><td class="n" data-adj="${a.id}"></td></tr>`).join('')}
+    <tr class="tot"><td>Total</td><td></td><td class="n" id="ctT"></td><td class="n" id="bkT"></td><td class="n" id="adjT"></td></tr></tbody></table></div>
+  <p class="small muted">"Used → COGS" is books minus counted. A negative number means you counted more than the books show, which usually means a purchase was missed or put in the wrong account.</p>
+  <div class="row"><button class="btn primary" id="post">Post count & COGS entry</button><span class="err" id="ce"></span></div></div>`;
+  $('#back').onclick = e => { e.preventDefault(); ui.count = null; vInventory(el); };
+  const calc = () => {
+    c.date = $('#cd').value;
+    $$('[data-q]', el).forEach(i => c.qty[i.dataset.q] = i.value);
+    $$('[data-m]', el).forEach(i => c.manual[i.dataset.m] = i.value);
+    const tt = totals(null, c.date || today());
+    let T = {ct: 0, bk: 0, adj: 0}, err = '';
+    const res = invAccts.map(a => {
+      let ct = 0;
+      for (const i of db.items.filter(i => i.acct === a.id)) {
+        const raw = String(c.qty[i.id] ?? '').trim(), q = raw === '' ? 0 : Number(raw);
+        if (!Number.isFinite(q) || q < 0) { err = `Quantity for ${i.name} isn't valid.`; continue; }
+        const v = Math.round(q * i.cost); ct += v;
+        const cell = $(`[data-v="${i.id}"]`, el); if (cell) cell.textContent = fmtB(v);
+      }
+      const m = parseMoney(c.manual[a.id]); if (Number.isNaN(m) || m < 0) err = `Amount for ${a.name} isn't valid.`; else ct += m;
+      const bk = nat(a, tt.get(a.id)), adj = bk - ct;
+      $(`[data-ct="${a.id}"]`, el).textContent = fmt(ct); $(`[data-bk="${a.id}"]`, el).textContent = fmt(bk); $(`[data-adj="${a.id}"]`, el).innerHTML = fmtN(adj);
+      T.ct += ct; T.bk += bk; T.adj += adj;
+      return {a, ct, bk, adj};
+    });
+    $('#ctT').textContent = fmt(T.ct); $('#bkT').textContent = fmt(T.bk); $('#adjT').innerHTML = fmtN(T.adj);
+    $('#ce').textContent = err;
+    return {res, err, total: T.ct};
+  };
+  el.addEventListener('input', calc); $('#cd').onchange = calc; calc();
+  $('#post').onclick = () => {
+    const {res, err, total} = calc();
+    if (err) return;
+    if (!c.date) return ($('#ce').textContent = 'Enter the count date.');
+    const lines = [];
+    for (const {a, adj} of res) {
+      if (!adj) continue;
+      if (!acct(a.cogs)) return ($('#ce').textContent = `Set a COGS account for "${a.name}" in Accounts first.`);
+      if (adj > 0) lines.push(D(a.cogs, adj, 'Used / sold'), C(a.id, adj));
+      else lines.push(D(a.id, -adj), C(a.cogs, -adj, 'Count higher than books'));
+    }
+    try {
+      let entryId = null;
+      if (lines.length) entryId = postEntry({date: c.date, ref: '', memo: 'Inventory count – cost of goods sold', kind: 'count', lines}).id;
+      db.counts.push({id: uid(), date: c.date, qty: {...c.qty}, manual: {...c.manual}, total, entryId});
+      save(); ui.count = null; vInventory(el); toast(lines.length ? 'Count posted to cost of goods sold' : 'Count saved (no adjustment needed)');
+    } catch (e2) { $('#ce').textContent = e2.message; }
+  };
+}
+
+/* -------------------------------- Reports ------------------------------- */
+function plData(from, to) {
+  const t = totals(from, to);
+  const sec = subs => sortedAccounts(a => subs.includes(a.sub)).map(a => ({a, v: nat(a, t.get(a.id))})).filter(r => r.v);
+  const sum = rows => rows.reduce((s, r) => s + r.v, 0);
+  const r = {incomeRows: sec(['income']), cogsRows: sec(['cogs']), opexRows: sec(['expense']), oiRows: sec(['otherincome']), oeRows: sec(['otherexpense'])};
+  r.income = sum(r.incomeRows); r.cogs = sum(r.cogsRows); r.opex = sum(r.opexRows); r.oi = sum(r.oiRows); r.oe = sum(r.oeRows);
+  r.gross = r.income - r.cogs; r.opInc = r.gross - r.opex; r.net = r.opInc + r.oi - r.oe;
+  return r;
+}
+function bsData(d) {
+  const fy = fyStart(d), all = totals(null, d), prior = totals(null, addDays(fy, -1)), cur = totals(fy, d);
+  const rows = subs => sortedAccounts(a => subs.includes(a.sub)).map(a => ({a, v: nat(a, all.get(a.id))})).filter(r => r.v);
+  const ni = m => db.accounts.filter(a => ['income', 'expense'].includes(tOf(a))).reduce((s, a) => s - (m.get(a.id) || 0), 0);
+  const r = {
+    cash: rows(['bank', 'cash', 'clearing']), ca: rows(['ar', 'inventory', 'otherca']), fa: rows(['fixed']),
+    cl: rows(['ap', 'creditcard', 'currentliab']), ll: rows(['longterm']), eq: rows(['equity']),
+    priorNI: ni(prior), curNI: ni(cur),
+  };
+  const s = x => x.reduce((t, y) => t + y.v, 0);
+  r.assets = s(r.cash) + s(r.ca) + s(r.fa); r.liab = s(r.cl) + s(r.ll); r.equity = s(r.eq) + r.priorNI + r.curNI;
+  r.sum = s;
+  return r;
+}
+function vReports(el) {
+  const tabs = [['pl', 'Profit & Loss'], ['plm', 'P&L by month'], ['bs', 'Balance Sheet'], ['tb', 'Trial Balance'], ['gl', 'General Ledger']];
+  el.innerHTML = `<h1>Reports</h1><div class="tabs noprint">${tabs.map(([k, l]) => `<button class="btn ${ui.report === k ? 'on' : ''}" data-rp="${k}">${l}</button>`).join('')}
+    <span class="right"></span><button class="btn" onclick="window.print()">Print / Save as PDF</button></div><div id="rp"></div>`;
+  $$('[data-rp]', el).forEach(b => b.onclick = () => { ui.report = b.dataset.rp; vReports(el); });
+  const rp = $('#rp');
+  ({pl: rPL, plm: rPLM, bs: rBS, tb: rTB, gl: rGL}[ui.report])(rp, () => vReports(el));
+}
+const head = (title, sub) => `<div style="text-align:center;margin:8px 0 14px"><div style="font-weight:700">${esc(db.settings.shopName || '')}</div><div style="font-size:18px;font-weight:700">${title}</div><div class="muted">${sub}</div></div>`;
+const acctRow = (a, v, from, to) => `<tr class="click" data-la="${a.id}" data-from="${from || ''}" data-to="${to || ''}"><td class="ind">${esc(a.code)} · ${esc(a.name)}</td><td class="n">${fmtN(v)}</td></tr>`;
+function bindAcctRows(el) {
+  $$('[data-la]', el).forEach(tr => tr.onclick = () => go('ledger', {ledger: {acct: tr.dataset.la, preset: 'custom', from: tr.dataset.from, to: tr.dataset.to}}));
+}
+function rPL(el, rerender) {
+  const s = ui.pl; const [from, to] = s.preset === 'custom' ? [s.from, s.to] : presetRange(s.preset);
+  const p = plData(from, to);
+  const pct = v => p.income ? `<span class="muted small">${(v / p.income * 100).toFixed(1)}%</span>` : '';
+  const block = (title, rows, total, label) => `<tr class="sec"><td colspan="2">${title}</td></tr>` + rows.map(r => acctRow(r.a, r.v, from, to)).join('') + `<tr class="sub"><td>${label}</td><td class="n">${fmtN(total)}</td></tr>`;
+  el.innerHTML = `<div class="panel">${rangeControls(s)}</div><div class="panel">${head('Profit & Loss', `${fmtDate(from) || 'Beginning'} – ${fmtDate(to)}`)}
+  <div class="tablewrap"><table style="max-width:720px;margin:0 auto"><tbody>
+    ${block('Income', p.incomeRows, p.income, 'Total income')}
+    ${block('Cost of goods sold', p.cogsRows, p.cogs, 'Total cost of goods sold')}
+    <tr class="sub"><td>Gross profit ${pct(p.gross)}</td><td class="n">${fmtN(p.gross)}</td></tr>
+    ${block('Operating expenses', p.opexRows, p.opex, 'Total operating expenses')}
+    <tr class="sub"><td>Operating income</td><td class="n">${fmtN(p.opInc)}</td></tr>
+    ${p.oiRows.length || p.oeRows.length ? block('Other income', p.oiRows, p.oi, 'Total other income') + block('Other expenses', p.oeRows, p.oe, 'Total other expenses') : ''}
+    <tr class="tot"><td>Net income ${pct(p.net)}</td><td class="n">${fmtN(p.net)}</td></tr></tbody></table></div>
+    <p class="small muted" style="text-align:center">Click an account to see its transactions. Cost of goods sold updates when you post an inventory count for the period.</p></div>`;
+  bindRange(el, s, rerender); bindAcctRows(el);
+}
+function rPLM(el, rerender) {
+  const t = today(); let s = fyStart(t); if (ui.monthlyFY === 'last') s = addYears(s, -1);
+  const months = []; for (let i = 0; i < 12; i++) { const y = +s.slice(0, 4) + Math.floor((+s.slice(5, 7) - 1 + i) / 12), m = (+s.slice(5, 7) - 1 + i) % 12 + 1; months.push([`${y}-${pad(m)}-01`, monthEnd(y, m), `${MONTHS[m - 1]} ${String(y).slice(2)}`]); }
+  const data = months.map(([f, to]) => plData(f, to)), tot = plData(months[0][0], months[11][1]);
+  const accts = k => [...new Map([...data, tot].flatMap(d => d[k]).map(r => [r.a.id, r.a])).values()].sort((a, b) => a.code.localeCompare(b.code, undefined, {numeric: true}));
+  const cell = v => `<td class="n">${v ? fmtN(v) : '<span class="muted">–</span>'}</td>`;
+  const sec = (title, k, totalKey, label) => {
+    const list = accts(k); if (!list.length && totalKey !== 'income') return '';
+    return `<tr class="sec"><td colspan="14">${title}</td></tr>` + list.map(a => `<tr><td class="ind" style="white-space:nowrap">${esc(a.name)}</td>${data.map(d => cell(d[k].find(r => r.a.id === a.id)?.v || 0)).join('')}${cell(tot[k].find(r => r.a.id === a.id)?.v || 0)}</tr>`).join('') +
+      `<tr class="sub"><td>${label}</td>${data.map(d => cell(d[totalKey])).join('')}${cell(tot[totalKey])}</tr>`;
+  };
+  const line = (label, k, cls = 'sub') => `<tr class="${cls}"><td>${label}</td>${data.map(d => cell(d[k])).join('')}${cell(tot[k])}</tr>`;
+  el.innerHTML = `<div class="panel noprint"><div class="tabs"><button class="btn ${ui.monthlyFY === 'this' ? 'on' : ''}" data-fy="this">This fiscal year</button><button class="btn ${ui.monthlyFY === 'last' ? 'on' : ''}" data-fy="last">Last fiscal year</button></div></div>
+  <div class="panel">${head('Profit & Loss by Month', `Fiscal year starting ${fmtDate(s)}`)}<div class="tablewrap"><table class="small"><thead><tr><th></th>${months.map(m => `<th class="n">${m[2]}</th>`).join('')}<th class="n">Total</th></tr></thead><tbody>
+  ${sec('Income', 'incomeRows', 'income', 'Total income')}${sec('Cost of goods sold', 'cogsRows', 'cogs', 'Total COGS')}${line('Gross profit', 'gross')}
+  ${sec('Operating expenses', 'opexRows', 'opex', 'Total expenses')}${sec('Other income', 'oiRows', 'oi', 'Total other income')}${sec('Other expenses', 'oeRows', 'oe', 'Total other expenses')}
+  ${line('Net income', 'net', 'tot')}</tbody></table></div></div>`;
+  $$('[data-fy]', el).forEach(b => b.onclick = () => { ui.monthlyFY = b.dataset.fy; rerender(); });
+}
+function rBS(el, rerender) {
+  const d = ui.bsDate || today(), b = bsData(d), fy = fyStart(d);
+  const rows = list => list.map(r => acctRow(r.a, r.v, '', d)).join('');
+  const subT = (l, v) => `<tr class="sub"><td>${l}</td><td class="n">${fmtN(v)}</td></tr>`;
+  const diff = b.assets - b.liab - b.equity;
+  el.innerHTML = `<div class="panel noprint"><label class="field" style="max-width:220px"><span>As of</span><input type="date" id="bsd" value="${d}"></label></div>
+  <div class="panel">${head('Balance Sheet', `As of ${fmtDate(d)}`)}<div class="tablewrap"><table style="max-width:720px;margin:0 auto"><tbody>
+  <tr class="sec"><td colspan="2">Assets</td></tr>
+  ${b.cash.length ? `<tr><td><b>Cash & bank</b></td><td></td></tr>${rows(b.cash)}${subT('Total cash & bank', b.sum(b.cash))}` : ''}
+  ${b.ca.length ? `<tr><td><b>Other current assets</b></td><td></td></tr>${rows(b.ca)}${subT('Total other current assets', b.sum(b.ca))}` : ''}
+  ${b.fa.length ? `<tr><td><b>Fixed assets</b></td><td></td></tr>${rows(b.fa)}${subT('Total fixed assets', b.sum(b.fa))}` : ''}
+  <tr class="tot"><td>Total assets</td><td class="n">${fmtN(b.assets)}</td></tr>
+  <tr><td colspan="2">&nbsp;</td></tr><tr class="sec"><td colspan="2">Liabilities</td></tr>
+  ${rows(b.cl)}${b.ll.length ? rows(b.ll) : ''}${subT('Total liabilities', b.liab)}
+  <tr class="sec"><td colspan="2">Equity</td></tr>${rows(b.eq)}
+  <tr><td class="ind">Retained earnings (prior years' profit)</td><td class="n">${fmtN(b.priorNI)}</td></tr>
+  <tr class="click" data-la="" id="curNI"><td class="ind">Net income this fiscal year (since ${fmtDate(fy)})</td><td class="n">${fmtN(b.curNI)}</td></tr>
+  ${subT('Total equity', b.equity)}
+  <tr class="tot"><td>Total liabilities & equity</td><td class="n">${fmtN(b.liab + b.equity)}</td></tr></tbody></table></div>
+  <p style="text-align:center" class="small">${diff === 0 ? '<span class="ok">✓ Assets = Liabilities + Equity</span>' : `<span class="err">Out of balance by ${fmt(diff)}</span>`}</p></div>`;
+  $('#bsd').onchange = e => { ui.bsDate = e.target.value; rerender(); };
+  bindAcctRows(el);
+  $('#curNI').onclick = () => { ui.report = 'pl'; ui.pl = {preset: 'custom', from: fy, to: d}; rerender(); };
+}
+function rTB(el, rerender) {
+  const d = ui.tbDate || today(), fy = fyStart(d);
+  const all = totals(null, d), cur = totals(fy, d), prior = totals(null, addDays(fy, -1));
+  const priorNI = db.accounts.filter(a => ['income', 'expense'].includes(tOf(a))).reduce((s, a) => s + (prior.get(a.id) || 0), 0); // as debit-minus-credit
+  let tdr = 0, tcr = 0, body = '';
+  for (const a of sortedAccounts()) {
+    const isPL = ['income', 'expense'].includes(tOf(a));
+    let v = (isPL ? cur : all).get(a.id) || 0;
+    if (a.id === db.settings.roles.retained) v += priorNI;
+    if (!v) continue;
+    const dr = v > 0 ? v : 0, cr = v < 0 ? -v : 0; tdr += dr; tcr += cr;
+    body += `<tr class="click" data-la="${a.id}" data-from="${isPL ? fy : ''}" data-to="${d}"><td>${esc(a.code)}</td><td>${esc(a.name)}</td><td class="n">${fmtB(dr)}</td><td class="n">${fmtB(cr)}</td></tr>`;
+  }
+  if (priorNI && !acct(db.settings.roles.retained)) body += `<tr><td></td><td>Retained earnings (prior years)</td><td class="n">${fmtB(priorNI > 0 ? priorNI : 0)}</td><td class="n">${fmtB(priorNI < 0 ? -priorNI : 0)}</td></tr>`, priorNI > 0 ? tdr += priorNI : tcr -= priorNI;
+  el.innerHTML = `<div class="panel noprint"><label class="field" style="max-width:220px"><span>As of</span><input type="date" id="tbd" value="${d}"></label></div>
+  <div class="panel">${head('Trial Balance', `As of ${fmtDate(d)}`)}<div class="tablewrap"><table style="max-width:760px;margin:0 auto"><thead><tr><th>Code</th><th>Account</th><th class="n">Debit</th><th class="n">Credit</th></tr></thead>
+  <tbody>${body}<tr class="tot"><td></td><td>Totals</td><td class="n">${fmt(tdr)}</td><td class="n">${fmt(tcr)}</td></tr></tbody></table></div>
+  <p style="text-align:center" class="small">${tdr === tcr ? '<span class="ok">✓ Debits equal credits</span>' : `<span class="err">Out of balance by ${fmt(tdr - tcr)}</span>`}<br><span class="muted">Income and expense accounts show this fiscal year only. Earlier years are rolled into retained earnings.</span></p></div>`;
+  $('#tbd').onchange = e => { ui.tbDate = e.target.value; rerender(); };
+  bindAcctRows(el);
+}
+function rGL(el, rerender) {
+  const s = ui.pl; const [from, to] = s.preset === 'custom' ? [s.from, s.to] : presetRange(s.preset);
+  const t = totals(from, to), before = from ? totals(null, addDays(from, -1)) : new Map();
+  let html = '';
+  for (const a of sortedAccounts()) {
+    const lines = []; for (const e of db.entries) if ((!from || e.date >= from) && (!to || e.date <= to)) for (const l of e.lines) if (l.acct === a.id) lines.push({e, l});
+    const open = nat(a, before.get(a.id));
+    if (!lines.length && !open) continue;
+    let run = open;
+    html += `<tr class="sec"><td colspan="5">${esc(a.code)} · ${esc(a.name)}</td><td class="n">${fmtN(open)}</td></tr>` + lines.map(({e, l}) => { run += nat(a, l.dr - l.cr);
+      return `<tr class="click" data-e="${e.id}"><td style="white-space:nowrap">${fmtDate(e.date)}</td><td>${e.no}</td><td>${esc(e.memo)}${l.memo ? ` · <span class="muted">${esc(l.memo)}</span>` : ''}</td><td class="n">${fmtB(l.dr)}</td><td class="n">${fmtB(l.cr)}</td><td class="n">${fmtN(run)}</td></tr>`; }).join('') +
+      `<tr class="sub"><td colspan="5">Ending ${esc(a.name)}</td><td class="n">${fmtN(run)}</td></tr>`;
+  }
+  el.innerHTML = `<div class="panel">${rangeControls(s)}</div><div class="panel">${head('General Ledger', `${fmtDate(from) || 'Beginning'} – ${fmtDate(to)}`)}<div class="tablewrap"><table class="small"><thead><tr><th>Date</th><th>#</th><th>Description</th><th class="n">Debit</th><th class="n">Credit</th><th class="n">Balance</th></tr></thead><tbody>${html || '<tr><td colspan="6" class="muted">No activity.</td></tr>'}</tbody></table></div></div>`;
+  bindRange(el, s, rerender); bindEntryTable(el);
+}
+
+/* -------------------------------- Accounts ------------------------------ */
+function vAccounts(el) {
+  const tt = totals(null, today()), used = new Set(db.entries.flatMap(e => e.lines.map(l => l.acct)));
+  el.innerHTML = `<div class="row"><h1>Chart of accounts</h1><span class="right"></span><button class="btn primary" id="addA">+ Add account</button></div>
+  <p class="muted">Balances as of today. Click an account to edit it. Accounts that have been used can be made inactive but not deleted.</p>
+  ${TYPES.map(t => `<h2>${TYPE_LABEL[t]}</h2><div class="panel tablewrap"><table><thead><tr><th style="width:70px">Code</th><th>Name</th><th>Detail type</th><th class="n">Balance</th></tr></thead><tbody>` +
+    sortedAccounts(a => tOf(a) === t).map(a => `<tr class="click" data-a="${a.id}"><td>${esc(a.code)}</td><td>${esc(a.name)}${a.active ? '' : ' <span class="pill">inactive</span>'}${a.note ? `<div class="small muted">${esc(a.note)}</div>` : ''}</td>
+      <td class="small">${esc(SUBS[a.sub].label)}${a.sub === 'inventory' ? `<div class="muted">COGS: ${esc(acct(a.cogs)?.name || 'not set')}</div>` : ''}</td><td class="n">${used.has(a.id) ? fmtN(nat(a, tt.get(a.id))) : ''}</td></tr>`).join('') + '</tbody></table></div>').join('')}`;
+  $('#addA').onclick = () => accountEditor(null, el);
+  $$('[data-a]', el).forEach(tr => tr.onclick = () => accountEditor(acct(tr.dataset.a), el));
+}
+function accountEditor(a, el) {
+  const used = a && db.entries.some(e => e.lines.some(l => l.acct === a.id));
+  const x = a ? {...a} : {code: '', name: '', sub: 'expense', note: '', active: true, cogs: ''};
+  const subOpts = Object.entries(SUBS).map(([k, v]) => `<option value="${k}" ${x.sub === k ? 'selected' : ''} ${used && SUBS[k].type !== tOf(a) ? 'disabled' : ''}>${TYPE_LABEL[v.type].split(' ')[0]} – ${v.label}</option>`).join('');
+  openDialog(`<div class="dhead"><h2>${a ? 'Edit account' : 'New account'}</h2><button class="btn sm" data-close>Close</button></div>
+  <div class="dbody"><div class="form">
+    <label class="field"><span>Code</span><input id="aC" value="${esc(x.code)}" placeholder="e.g. 6170"></label>
+    <label class="field"><span>Name</span><input id="aN" value="${esc(x.name)}"></label>
+    <label class="field"><span>Detail type</span><select id="aS">${subOpts}</select>${used ? '<small>This account has been used, so its main type can\'t change.</small>' : ''}</label>
+    <label class="field" id="aCogsW"><span>COGS account (for inventory)</span><select id="aG">${acctOptions(x.cogs, a2 => a2.sub === 'cogs', {blank: true})}</select></label>
+    <label class="field" style="grid-column:1/-1"><span>Note</span><input id="aT" value="${esc(x.note)}"></label>
+    <label class="row"><input type="checkbox" id="aA" ${x.active ? 'checked' : ''}> Active (shows in pick lists)</label></div><p class="err" id="aE"></p>
+    <p class="small muted">Codes: 1xxx assets · 2xxx liabilities · 3xxx equity · 4xxx income · 5xxx cost of goods sold · 6xxx expenses · 7xxx other.</p></div>
+  <div class="dfoot">${a && !used && !Object.values(db.settings.roles).includes(a.id) ? '<button class="btn danger" id="aDel" style="margin-right:auto">Delete</button>' : ''}<button class="btn" data-close>Cancel</button><button class="btn primary" id="aSave">Save</button></div>`, () => {
+    const tog = () => $('#aCogsW').style.display = $('#aS').value === 'inventory' ? '' : 'none'; tog(); $('#aS').onchange = tog;
+    $('#aSave').onclick = () => {
+      const code = $('#aC').value.trim(), name = $('#aN').value.trim();
+      if (!code || !name) return ($('#aE').textContent = 'Code and name are required.');
+      if (db.accounts.some(o => o.code === code && o.id !== x.id)) return ($('#aE').textContent = 'Another account already uses that code.');
+      Object.assign(x, {code, name, sub: $('#aS').value, note: $('#aT').value.trim(), active: $('#aA').checked, cogs: $('#aS').value === 'inventory' ? $('#aG').value : ''});
+      if (a) Object.assign(a, x); else { x.id = 'a' + uid(); db.accounts.push(x); }
+      save(); closeDialog(); vAccounts(el);
+    };
+    $('#aDel')?.addEventListener('click', () => { if (!confirm(`Delete ${a.name}?`)) return; db.accounts = db.accounts.filter(o => o.id !== a.id); db.items = db.items.filter(i => i.acct !== a.id); save(); closeDialog(); vAccounts(el); });
+  });
+}
+
+/* -------------------------------- Settings ------------------------------ */
+function vSettings(el) {
+  const s = db.settings;
+  el.innerHTML = `<h1>Settings & Backup</h1>
+  <div class="panel"><h2 style="margin-top:0">Backup</h2>
+    <p>Your books are stored <b>only in this browser on this computer</b>. Clearing browsing data, or opening this file in a different browser, will not show them. <b>Download a backup at least once a week</b> and keep copies somewhere safe, such as a USB drive or cloud folder.</p>
+    <p class="muted small">Last backup: ${s.lastBackup ? new Date(s.lastBackup).toLocaleString() : 'never'}</p>
+    <div class="row"><button class="btn primary" id="bk">Download backup</button><button class="btn" id="rs">Restore from backup…</button><button class="btn" id="csv">Export journal to CSV</button></div></div>
+  <div class="panel"><h2 style="margin-top:0">Shop</h2><div class="form">
+    <label class="field"><span>Shop name</span><input id="sN" value="${esc(s.shopName)}"></label>
+    <label class="field"><span>Fiscal year starts</span><select id="sF">${MONTHS.map((m, i) => `<option value="${i + 1}" ${+s.fyStartMonth === i + 1 ? 'selected' : ''}>${m}</option>`).join('')}</select></label>
+    <label class="field"><span>Lock books through</span><input type="date" id="sL" value="${s.lockDate || ''}"><small>Stops changes on or before this date, for example after you file taxes.</small></label></div>
+    <div class="row" style="margin-top:10px"><button class="btn primary" id="sSave">Save settings</button></div></div>
+  <div class="panel"><h2 style="margin-top:0">Default accounts</h2><p class="muted small">The quick forms use these accounts.</p><div class="form">
+    ${Object.entries(ROLES).map(([k, [label, f]]) => `<label class="field"><span>${label}</span><select data-role="${k}">${acctOptions(s.roles[k], f, {blank: true})}</select></label>`).join('')}</div></div>
+  <div class="panel"><h2 style="margin-top:0">Opening balances</h2><p>Starting your books partway through? Enter balances as of the day <i>before</i> your first transaction. The difference goes to Opening Balance Equity.</p>
+    <button class="btn" id="ob">Enter opening balances…</button></div>
+  <div class="panel"><h2 style="margin-top:0">Start over</h2><p class="muted small">Erase everything in this browser. Download a backup first if you might want it.</p>
+    <div class="row"><button class="btn danger" id="erase">Erase all data</button><button class="btn" id="demo">Load sample data</button></div></div>`;
+  $('#bk').onclick = downloadBackup;
+  $('#rs').onclick = () => $('#restoreFile').click();
+  $('#csv').onclick = exportCSV;
+  $('#sSave').onclick = () => { s.shopName = $('#sN').value.trim(); s.fyStartMonth = +$('#sF').value; s.lockDate = $('#sL').value; save(); render(); toast('Settings saved'); };
+  $$('[data-role]', el).forEach(sel => sel.onchange = () => { s.roles[sel.dataset.role] = sel.value; save(); toast('Default account updated'); });
+  $('#ob').onclick = openingBalances;
+  $('#erase').onclick = () => {
+    if (!confirm('Erase ALL books in this browser? This cannot be undone.')) return;
+    if (prompt('Type ERASE to confirm') !== 'ERASE') return;
+    db = seed(); save(); go('dash'); toast('All data erased');
+  };
+  $('#demo').onclick = () => { if ((!db.entries.length || confirm('This replaces everything in this browser with sample data. Continue?'))) { loadDemo(); go('dash'); } };
+}
+function openingBalances() {
+  const list = sortedAccounts(a => ['asset', 'liability'].includes(tOf(a)) && a.active);
+  const firstDate = db.entries[0]?.date;
+  openDialog(`<div class="dhead"><h2>Opening balances</h2><button class="btn sm" data-close>Close</button></div>
+  <div class="dbody"><label class="field" style="max-width:220px"><span>As of date</span><input type="date" id="obD" value="${firstDate ? addDays(firstDate, -1) : addDays(today(), -1)}"></label>
+  <p class="small muted">Enter positive numbers as they appear on statements: what you have for assets, what you owe for liabilities. Enter accumulated depreciation as a negative.</p>
+  <div class="tablewrap"><table><thead><tr><th>Account</th><th class="n">Balance</th></tr></thead><tbody>
+  ${list.map(a => `<tr><td>${esc(a.code)} · ${esc(a.name)}<div class="small muted">${TYPE_LABEL[tOf(a)]}</div></td><td class="n"><input class="money" style="width:130px" inputmode="decimal" data-ob="${a.id}"></td></tr>`).join('')}
+  </tbody></table></div><p id="obS"></p></div>
+  <div class="dfoot"><button class="btn" data-close>Cancel</button><button class="btn primary" id="obP">Post opening balances</button></div>`, () => {
+    const calc = () => {
+      let lines = [], net = 0, bad = false;
+      $$('[data-ob]', dlg).forEach(i => {
+        const v = parseMoney(i.value); if (Number.isNaN(v)) { bad = true; return; } if (!v) return;
+        const a = acct(i.dataset.ob), dc = sign(a) * v; // dc>0 debit
+        lines.push(dc > 0 ? L(a.id, dc, 0) : L(a.id, 0, -dc)); net += dc;
+      });
+      if (net) lines.push(net > 0 ? L(R('openingEquity'), 0, net) : L(R('openingEquity'), -net, 0));
+      $('#obS').innerHTML = bad ? '<span class="err">One of the amounts isn\'t valid.</span>' : `Opening Balance Equity: <b>${fmt(net)}</b> (your starting net worth in the business)`;
+      return bad ? null : lines;
+    };
+    $('.dbody', dlg).addEventListener('input', calc); calc();
+    $('#obP').onclick = () => {
+      try {
+        const lines = calc(); if (!lines) return; if (lines.length < 2) throw new Error('Enter at least one balance.');
+        const e = postEntry({date: $('#obD').value, ref: '', memo: 'Opening balances', kind: 'opening', lines});
+        save(); closeDialog(); render(); toast(`Opening balances posted (entry #${e.no})`);
+      } catch (err) { $('#obS').innerHTML = `<span class="err">${esc(err.message)}</span>`; }
+    };
+  });
+}
+function download(name, text, type) {
+  const blob = new Blob([text], {type}), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+const slug = () => (db.settings.shopName || 'shop').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'shop';
+function downloadBackup() {
+  db.settings.lastBackup = Date.now();
+  save(false);
+  download(`${slug()}-books-backup-${today()}.json`, JSON.stringify(db, null, 1), 'application/json');
+  renderBanner(); if (view === 'settings') render();
+  toast('Backup downloaded. Keep it somewhere safe.');
+}
+$('#restoreFile').onchange = ev => {
+  const f = ev.target.files[0]; ev.target.value = ''; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const d = JSON.parse(rd.result);
+      if (!d || !Array.isArray(d.accounts) || !Array.isArray(d.entries) || !d.settings) throw new Error('This file is not a Shop Books backup.');
+      if (!confirm(`Restore this backup (${d.entries.length} entries${d.settings.shopName ? ' for ' + d.settings.shopName : ''})? It REPLACES what is in this browser now.`)) return;
+      d.recons ||= []; d.items ||= []; d.counts ||= []; d.nextNo ||= Math.max(0, ...d.entries.map(e => e.no || 0)) + 1;
+      d.settings.roles = {...seed().settings.roles, ...(d.settings.roles || {})};
+      db = d; save(false); go('dash'); toast('Backup restored');
+    } catch (e) { alert('Could not restore: ' + e.message); }
+  };
+  rd.readAsText(f);
+};
+function exportCSV() {
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = [['Date', 'Entry #', 'Type', 'Reference', 'Description', 'Account code', 'Account', 'Debit', 'Credit', 'Line note', 'Reconciled']];
+  for (const e of db.entries) for (const l of e.lines) { const a = acct(l.acct);
+    rows.push([e.date, e.no, KIND_LABEL[e.kind] || e.kind, e.ref, e.memo, a?.code, a?.name, l.dr ? plain(l.dr) : '', l.cr ? plain(l.cr) : '', l.memo, l.rec ? 'Y' : '']); }
+  download(`${slug()}-journal-${today()}.csv`, rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv');
+}
+
+/* ------------------------------- Sample data ---------------------------- */
+function loadDemo() {
+  db = seed(); db.settings.demo = true; db.settings.shopName = 'Sample Chocolate Shop';
+  let seedN = 42; const rnd = () => { seedN = (seedN * 1664525 + 1013904223) % 4294967296; return seedN / 4294967296; };
+  const amt = (lo, hi) => Math.round((lo + rnd() * (hi - lo)) * 100);
+  const t = today(), y = +t.slice(0, 4), m = +t.slice(5, 7);
+  let py = y, pm = m - 1; if (!pm) { pm = 12; py--; }
+  const start = `${py}-${pad(pm)}-01`, prevEnd = monthEnd(py, pm), end = addDays(t, -1);
+  const P = (date, memo, kind, lines, ref = '') => postEntry({date, memo, kind, ref, lines: lines.filter(Boolean)}, {skipValidate: true});
+  P(addDays(start, -1), 'Opening balances', 'opening', [L('a1000', 850000, 0), L('a1050', 20000, 0), L('a1300', 180000, 0), L('a1310', 60000, 0), L('a1320', 35000, 0), L('a1500', 950000, 0), L('a2100', 0, 45000), L('a3200', 0, 2050000)]);
+  db.items = [
+    {id: uid(), name: '70% dark couverture', acct: 'a1300', unit: 'kg', cost: 1850}, {id: uid(), name: 'Milk couverture', acct: 'a1300', unit: 'kg', cost: 1600},
+    {id: uid(), name: 'Heavy cream', acct: 'a1300', unit: 'qt', cost: 525}, {id: uid(), name: 'Nuts & inclusions', acct: 'a1300', unit: 'lb', cost: 950},
+    {id: uid(), name: '9-piece gift box', acct: 'a1310', unit: 'each', cost: 110}, {id: uid(), name: 'Ribbon', acct: 'a1310', unit: 'roll', cost: 600},
+    {id: uid(), name: 'Hot cocoa tins', acct: 'a1320', unit: 'each', cost: 750}];
+  let drawer = 20000, pendingCard = [];
+  for (let d = start; d <= end; d = addDays(d, 1)) {
+    const day = +d.slice(8, 10), w = dow(d);
+    while (pendingCard.length && pendingCard[0].pay <= d) { const p = pendingCard.shift(); const fee = Math.round(p.amt * 0.029) + 300;
+      P(d, 'Card processor payout', 'payout', [D('a1000', p.amt - fee), D('a6020', fee, 'Processing fees'), C('a1100', p.amt)]); }
+    if (day === 1) P(d, 'Rent – Main Street', 'expense', [D('a6000', 240000), C('a1000', 240000)], 'Landlord');
+    if (day === 3) P(d, 'Software & Website – POS subscription', 'expense', [D('a6080', 8900), C('a2100', 8900)]);
+    if (day === 12) { const u = amt(260, 340); P(d, 'Utilities – electric & gas', 'expense', [D('a6010', u), C('a1000', u)]); }
+    if (day === 15) P(d, 'Insurance – general liability', 'expense', [D('a6060', 14500), C('a2100', 14500)]);
+    if (day === 20) P(d, 'Advertising – local magazine', 'expense', [D('a6070', 12000), C('a2100', 12000)]);
+    if (day === 10) P(d, 'Purchase – Couverture supplier', 'purchase', [D('a1300', 260000), C('a2000', 260000)], 'Cacao Imports');
+    if (day === 25) P(d, 'Bill payment – Cacao Imports', 'paybill', [D('a2000', 260000), C('a1000', 260000)]);
+    if (day % 7 === 4) { const p = amt(260, 420); P(d, 'Purchase – Dairy & ingredients', 'purchase', [D('a1300', p), C('a1000', p)], 'Local Dairy'); }
+    if (day === 6 || day === 21) P(d, 'Purchase – Gift boxes & ribbon', 'purchase', [D('a1310', 42000), C('a2100', 42000)], 'Box Co.');
+    if (day === 22) { const ccBal = bal('a2100', d); if (ccBal > 0) P(d, 'Credit card payment', 'paycc', [D('a2100', ccBal), C('a1000', ccBal)]); }
+    if (day === 28) P(d, 'Owner draw', 'ownerout', [D('a3100', 150000), C('a1000', 150000)]);
+    if (w === 1) continue; // closed Mondays
+    const boost = (w === 0 || w === 6) ? 1.6 : 1, cash = Math.round(amt(50, 160) * boost), card = Math.round(amt(260, 620) * boost), tax = Math.round((cash + card) * 0.06 / 1.06);
+    P(d, 'Daily sales', 'sales', [D('a1050', cash, 'Cash sales'), D('a1100', card, 'Card sales'), C('a4000', cash + card - tax), C('a2200', tax, 'Sales tax collected')]);
+    drawer += cash; pendingCard.push({amt: card, pay: addDays(d, 2)});
+    if (w === 6 && drawer > 30000) { const dep = drawer - 20000; P(d, 'Cash deposit', 'deposit', [D('a1000', dep), C('a1050', dep)]); drawer -= dep; }
+    if (day % 9 === 0) { const g = amt(25, 75); P(d, 'Gift card sold', 'gcsold', [D('a1100', g), C('a2300', g)]); pendingCard.push({amt: g, pay: addDays(d, 2)}); }
+    if (day === 14) P(d, 'Chocolate tasting class (8 guests)', 'sales', [D('a1100', 36000), C('a4200', 36000)]);
+    if (day === 18) { P(d, 'Invoice – corporate gift boxes', 'invoice', [D('a1200', 64000), C('a4100', 64000)], 'Acme Law LLP'); }
+  }
+  // Month-end inventory count for last month
+  const tt = totals(null, prevEnd), lines = [];
+  for (const [inv, cogs, keep] of [['a1300', 'a5000', 0.42], ['a1310', 'a5010', 0.55], ['a1320', 'a5020', 0.6]]) {
+    const book = tt.get(inv) || 0, counted = Math.round(book * keep / 100) * 100, used = book - counted;
+    if (used) lines.push(D(cogs, used, 'Used / sold'), C(inv, used));
+  }
+  const ce = P(prevEnd, 'Inventory count – cost of goods sold', 'count', lines);
+  db.counts.push({id: uid(), date: prevEnd, qty: {}, manual: {}, total: ['a1300', 'a1310', 'a1320'].reduce((s, a) => s + bal(a, prevEnd), 0), entryId: ce.id});
+  // Received payment on the invoice
+  if (addDays(start, 27) <= end) P(addDays(start, 27), 'Invoice payment received', 'received', [D('a1000', 64000), C('a1200', 64000)], 'Acme Law LLP');
+  db.settings.lastBackup = Date.now();
+  save();
+}
+
+render();
+</script>
+</body>
+</html>
